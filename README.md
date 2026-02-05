@@ -2,6 +2,15 @@
 
 A comprehensive course on distributed systems from fundamentals to consensus, implemented with mdBook.
 
+## Author
+
+**Mohamed Dardouri**
+
+- Email: [email protected]
+- Website: [https://med.dardouri.com](https://med.dardouri.com)
+- LinkedIn: [linkedin.com/in/dardourimohamed](https://linkedin.com/in/dardourimohamed)
+- X/Twitter: [@DardouriMohamed](https://x.com/DardouriMohamed)
+
 ## Quick Start
 
 ### Prerequisites
