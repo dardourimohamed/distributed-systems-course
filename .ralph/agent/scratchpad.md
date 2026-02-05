@@ -1,75 +1,57 @@
-# Scratchpad - Cloudflare Pages Deployment
+# Scratchpad - Author Attribution Task
 
-## Current Understanding
+## Objective
+Properly mention the author (Mohamed Dardouri) throughout the distributed systems course project.
 
-Project: Distributed Systems Course (mdBook)
-- Built with mdBook v0.4.45
-- Output directory: `book/` (per book.toml)
-- Uses mdbook-mermaid and mdbook-quiz preprocessors
-- Currently no package.json at project root
+## Author Details (from med.dardouri.com/contact)
+- Name: Mohamed Dardouri
+- Email: [email protected]
+- Website: https://med.dardouri.com
+- LinkedIn: linkedin.com/in/dardourimohamed
+- X/Twitter: x.com/DardouriMohamed
 
-Objective: Add npm script to deploy to Cloudflare Pages
+## Project Overview
+This is a Distributed Systems Course project built with:
+- mdBook for documentation
+- TypeScript and Python code examples
+- Node.js runtime
+- Docker for deployment
 
-## Analysis
+## Current State
+- README.md: No author information
+- book.toml: Updated to "Mohamed Dardouri"
+- package.json: Author field set
+- No LICENSE file (though MIT is specified in package.json)
 
-Cloudflare Pages deployment typically requires:
-1. A build command that produces static files in a directory
-2. The output directory to deploy
-
-For mdBook on Cloudflare Pages:
-- Build command: `mdbook build`
-- Output directory: `book`
-- No package.json is strictly required for Cloudflare Pages if using direct Git integration
-
-However, the user wants an **npm script** for deployment. This means:
-1. Create package.json with scripts
-2. Use Wrangler CLI (Cloudflare's tool) for deployment via npm
+## Completed
+- [x] package.json - Set author field (committed: f4cb618)
+- [x] book.toml - Update authors field (committed: f041f84)
 
 ## Plan
+Add author attribution to key locations:
+1. ~~package.json - Set author field~~ DONE
+2. ~~book.toml - Update authors field~~ DONE
+3. README.md - Add author section
+4. Create LICENSE file (MIT)
+5. Consider adding file headers to code examples (optional)
 
-1. Create package.json with:
-   - `build` script: runs `mdbook build`
-   - `deploy` script: runs build then uses Wrangler to deploy
-   - Or use `wrangler pages deploy` command directly
+---
 
-2. Consider using Wrangler v2+ which supports: `wrangler pages deploy <directory> --project-name=<name>`
+## 2026-02-05 Update
+Successfully updated book.toml authors field from "Course Authors" to "Mohamed Dardouri". One task completed this iteration.
 
-## Tasks to Create
+## 2026-02-05 - Creating MIT LICENSE
+Current task: Create MIT LICENSE file with Mohamed Dardouri as copyright holder.
+The license will use standard MIT text with the year 2025 (based on project creation context).
 
-1. Create package.json with build script
-2. Add deploy script using wrangler
-3. Document usage instructions
+## 2026-02-05 - Completed MIT LICENSE
+- Created LICENSE file with standard MIT License text
+- Copyright holder: Mohamed Dardouri (2025)
+- Committed: 87195be
+- Task closed: task-1770309515-9df1
 
-Let me create these tasks and implement one at a time.
-
-## Implementation Complete
-
-Created package.json with:
-- `npm run build` - Builds the mdBook to `book/` directory
-- `npm run deploy` - Builds and deploys to Cloudflare Pages
-- `npm run deploy:production` - Builds and deploys to production branch
-
-The build script was tested and works correctly. The `book/` output directory is created successfully.
-
-## Usage Instructions
-
-First time setup (install Wrangler CLI):
-```bash
-npm install
-```
-
-Then authenticate with Cloudflare:
-```bash
-npx wrangler login
-```
-
-Deploy to Cloudflare Pages:
-```bash
-npm run deploy
-```
-
-Note: The project name `distributed-systems-course` can be changed to match your actual Cloudflare Pages project name.
-
-## All Tasks Complete
-
-The objective has been fulfilled. The npm script for Cloudflare Pages deployment has been properly added.
+All author attribution tasks are now complete:
+1. ✅ package.json - author field set (f4cb618)
+2. ✅ book.toml - authors field updated (f041f84)
+3. ✅ README.md - author section added (610a748)
+4. ✅ LICENSE - MIT license created (87195be)
