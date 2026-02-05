@@ -1,0 +1,14 @@
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "What's the main advantage of hash-based partitioning?"
+prompt.distractors = ["Efficient range queries", "Even data distribution", "Faster writes"]
+answer.answer = "Even data distribution"
+context = "Hash partitioning distributes data uniformly across nodes, preventing hot spots. Trade-off: can't do efficient range queries."
+id = "b2aaab0a-a0e6-4001-8ce3-2fdfa5319adf"
+
+[[questions]]
+type = "ShortAnswer"
+prompt.prompt = "What partitioning strategy is ideal for time-series data?"
+answer.answer = "range partitioning"
+context = "Range partitioning by time is perfect for time-series—query a specific time range only touches specific partitions."
+id = "e0762093-139c-49d7-bb3d-240117b47112"

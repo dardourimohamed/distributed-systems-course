@@ -1,0 +1,14 @@
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "What consistency model guarantees every read receives the most recent write?"
+prompt.distractors = ["Eventual consistency", "Causal consistency", "Linearizability"]
+answer.answer = "Linearizability"
+context = "Linearizability (strong consistency) guarantees you read the latest write. Powerful but impacts performance and availability."
+id = "a20b48a3-a7b1-47e7-9e65-baf3381aaefe"
+
+[[questions]]
+type = "ShortAnswer"
+prompt.prompt = "What consistency model means a user sees their own writes immediately, but other users might see stale data?"
+answer.answer = "read your writes"
+context = "Read-your-writes is a session guarantee—users see their own updates immediately, even if replication hasn't finished."
+id = "47521169-2a76-4184-a4fc-9165a35cbc2d"

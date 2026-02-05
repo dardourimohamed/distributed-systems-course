@@ -1,0 +1,20 @@
+{
+  "name": "distributed-systems-course",
+  "version": "1.0.0",
+  "description": "A comprehensive course on distributed systems from fundamentals to consensus",
+  "private": true,
+  "scripts": {
+    "build": "mdbook build",
+    "deploy": "npm run build && wrangler pages deploy book --project-name=distributed-systems-course --branch=production"
+  },
+  "devDependencies": {
+    "wrangler": "^4.63.0"
+  },
+  "keywords": [
+    "distributed-systems",
+    "mdbook",
+    "course"
+  ],
+  "author": "",
+  "license": "MIT"
+}

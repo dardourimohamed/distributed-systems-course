@@ -1,0 +1,14 @@
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "Why do WebSockets start as HTTP before upgrading?"
+prompt.distractors = ["For faster connection", "To work through proxies/firewalls", "HTTP is more reliable"]
+answer.answer = "To work through proxies/firewalls"
+context = "Starting as HTTP means WebSocket connections work through most existing infrastructure (proxies, firewalls). The Upgrade header signals the switch."
+id = "7326e914-4559-4860-82f2-c84db5fa909e"
+
+[[questions]]
+type = "ShortAnswer"
+prompt.prompt = "What's the efficient I/O model for handling thousands of concurrent WebSocket connections?"
+answer.answer = "event loop"
+context = "Event loop + async I/O allows one thread to handle thousands of connections. No need for one thread per connection."
+id = "be156e80-a910-4068-8b40-2cb85e4bd0cb"

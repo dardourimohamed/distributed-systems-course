@@ -1,0 +1,14 @@
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "What do sequence numbers ensure in a chat system?"
+prompt.distractors = ["Faster delivery", "Message ordering", "Encryption"]
+answer.answer = "Message ordering"
+context = "Sequence numbers impose order—users see messages in the order they were sent. Timestamps don't work due to clock skew across servers."
+id = "ec18516a-7b1e-459d-a377-24ef048f91ab"
+
+[[questions]]
+type = "ShortAnswer"
+prompt.prompt = "How do you route messages to only users in a specific chat room efficiently?"
+answer.answer = "room map"
+context = "Maintain a map of roomId to connected WebSocket connections. Broadcast only to connections in that room—no wasted bandwidth."
+id = "cbced47a-eabb-4e3d-a677-13f4f294d516"

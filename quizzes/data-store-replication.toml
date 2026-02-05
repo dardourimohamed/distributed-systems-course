@@ -1,0 +1,14 @@
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "What's the main advantage of synchronous replication?"
+prompt.distractors = ["Faster writes", "Better durability", "Simpler implementation"]
+answer.answer = "Better durability"
+context = "Sync replication means data is safely on multiple nodes before confirmation. If leader crashes, data isn't lost. Trade-off: slower writes."
+id = "33da255c-415e-4b69-bd64-3778d8a2b553"
+
+[[questions]]
+type = "ShortAnswer"
+prompt.prompt = "What's the process called when a leader fails and a follower is promoted?"
+answer.answer = "failover"
+context = "Failover is critical for availability—detecting failure, choosing a new leader, and reconfiguring the system."
+id = "763368c4-301d-437d-818d-128f2b29ecfc"

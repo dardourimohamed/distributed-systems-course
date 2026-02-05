@@ -1,0 +1,40 @@
+# Distributed Systems Course - mdBook Configuration
+
+[book]
+title = "Distributed Systems Course"
+authors = ["Course Authors"]
+description = "A comprehensive course on distributed systems from fundamentals to consensus"
+language = "en"
+src = "src"
+
+[build]
+build-dir = "book"
+create-missing = true
+use-default-preprocessors = true
+
+[preprocessor.mermaid]
+command = "mdbook-mermaid"
+
+[preprocessor.quiz]
+fullscreen = true
+cache-answers = true
+
+[output.html]
+default-theme = "light"
+preferred-dark-theme = "navy"
+additional-js = ["book.js"]
+
+[output.html.search]
+enable = true
+limit-results = 30
+teaser-word-count = 30
+use-boolean-and = true
+boost-title = 2
+boost-hierarchy = 2
+boost-paragraph = 1
+expand = true
+heading-split-level = 3
+copy-js = true
+
+[output.html.code]
+# Enable syntax highlighting for TypeScript and Python

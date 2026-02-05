@@ -1,0 +1,14 @@
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "Why does Raft use a strong leader approach?"
+prompt.distractors = ["Leaders are faster", "Simpler to understand", "More reliable"]
+answer.answer = "Simpler to understand"
+context = "Raft restricts log entries to flow only from leader to followers. This simplifies the algorithm—no concurrent proposals or complex conflict resolution."
+id = "8a7bbe0b-51c6-4767-a8e0-bf02a5a0d817"
+
+[[questions]]
+type = "ShortAnswer"
+prompt.prompt = "What's the term in Raft that represents the current election period?"
+answer.answer = "term"
+context = "Terms represent logical time for elections. Each election increments the term. Higher term means more recent leader. Terms help detect stale leaders."
+id = "0ab18b01-2734-4c94-b9ca-a062642fcffa"

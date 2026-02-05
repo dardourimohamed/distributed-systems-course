@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  node1:
+    build: .
+    container_name: store-py-node1
+    ports:
+      - "4001:4000"
+    environment:
+      - NODE_ID=node-1
+      - PORT=4000
+      - PEERS=http://node2:4000,http://node3:4000
+    networks:
+      - store-network
+    command: python src/node.py
+
+  node2:
+    build: .
+    container_name: store-py-node2
+    ports:
+      - "4002:4000"
+    environment:
+      - NODE_ID=node-2
+      - PORT=4000
+      - PEERS=http://node1:4000,http://node3:4000
+    networks:
+      - store-network
+    command: python src/node.py
+
+  node3:
+    build: .
+    container_name: store-py-node3
+    ports:
+      - "4003:4000"
+    environment:
+      - NODE_ID=node-3
+      - PORT=4000
+      - PEERS=http://node1:4000,http://node2:4000
+    networks:
+      - store-network
+    command: python src/node.py
+
+networks:
+  store-network:
+    driver: bridge

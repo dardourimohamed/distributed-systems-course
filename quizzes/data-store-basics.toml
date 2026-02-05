@@ -1,0 +1,14 @@
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "What's the critical drawback of in-memory key-value stores?"
+prompt.distractors = ["They're slow", "Data is lost on restart", "They can't store complex data"]
+answer.answer = "Data is lost on restart"
+context = "In-memory means no durability—process crash or restart loses all data. For persistence, you need disk writes or replication."
+id = "39fab414-27c4-4d17-960c-9adc1d28d634"
+
+[[questions]]
+type = "ShortAnswer"
+prompt.prompt = "What operation creates a key if it doesn't exist, but returns an error if it already exists?"
+answer.answer = "compare-and-set"
+context = "CAS (Compare-And-Set) is a conditional write that only succeeds if a precondition is met. Prevents lost updates and race conditions."
+id = "cef84063-93c5-44ac-9ab9-980bcba35901"

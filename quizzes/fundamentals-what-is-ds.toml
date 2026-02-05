@@ -1,0 +1,65 @@
+# Quiz: What is a Distributed System?
+
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "Leslie Lamport famously defined distributed systems with a wry observation about failure. Which of these captures his definition best?"
+prompt.distractors = [
+  "A system where the failure of a computer you didn't even know existed can render your own computer unusable.",
+  "A collection of independent computers that appears to its users as a single coherent system.",
+  "Multiple computers working together to solve a problem faster than any single machine."
+]
+answer.answer = "A system where the failure of a computer you didn't even know existed can render your own computer unusable."
+context = "Lamport's definition brilliantly highlights the dark side of distribution: independent failure. When components can fail separately, a failure somewhere you didn't even know existed can cascade and break everything. This is why distributed systems are both powerful and terrifying!"
+id = "310d917d-a04e-4d5c-8b27-1a198aaa3948"
+
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "You're building a system and realize you can't rely on a single 'now' across all your servers. Which fundamental characteristic of distributed systems have you just encountered?"
+prompt.distractors = [
+  "Concurrency - multiple things happening at once",
+  "Independent failure - components can fail separately",
+  "The illusion of unity - appearing as one system"
+]
+answer.answer = "No global clock - each node has its own clock"
+context = "Time is surprisingly tricky in distributed systems! Each node has its own clock, and network latency means you can't synchronize them perfectly. This is why distributed systems use logical clocks (like vector clocks) instead of physical clocks to order events. Your 'now' is not the same as someone else's 'now'!"
+id = "e429a35c-a923-4e74-b3ab-08f66c174332"
+
+[[questions]]
+type = "ShortAnswer"
+prompt.prompt = "You're the CTO of a growing startup. Your single powerful server costs $100,000 and is maxed out. Your CEO wants to add more machines instead of buying an even bigger server. What's this scaling strategy called?"
+answer.answer = "horizontal scaling"
+answer.alternatives = ["scale out", "scaling out"]
+context = "Horizontal scaling (scale out) means adding more commodity machines to your system. This is virtually unlimited and cost-effective. The alternative is vertical scaling (scale up), which means buying a bigger, more expensive single server. Eventually, vertical scaling hits hardware limits—so horizontal scaling is the way to go for growing systems!"
+id = "3647d7e9-6ae2-4040-aebc-c45f45faa7c6"
+
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "Your friend says: 'I'll build a distributed system because it's always more reliable!' You, being a distributed systems expert, respond with: 'Well, actually...' and then point out which challenge?"
+prompt.distractors = [
+  "Distributed systems are always slower due to network latency.",
+  "Distributed systems introduce complexity like network issues, concurrency problems, and consistency challenges.",
+  "Distributed systems are only useful for web applications."
+]
+answer.answer = "Distributed systems introduce complexity like network issues, concurrency problems, and consistency challenges."
+context = "Distribution is not free! The fundamental dilemma is whether the benefits (scalability, reliability, lower latency) are worth the costs (network unreliability, race conditions, partial failures, keeping data in sync). For most modern applications, the answer is 'yes'—but it's always a trade-off, never a free lunch!"
+id = "17c72952-cf5d-471f-bfab-0e434dc57579"
+
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "You're explaining distributed systems to a non-technical friend. You say: 'Imagine a restaurant where the kitchen, the dining room, and the bar all seem like one seamless experience, but behind the scenes...' What completes this analogy best?"
+prompt.distractors = [
+  "...there's just one big kitchen doing everything.",
+  "...each section operates independently with its own staff, communicating through orders and tickets.",
+  "...the manager micromanages every single interaction."
+]
+answer.answer = "...each section operates independently with its own staff, communicating through orders and tickets."
+context = "The illusion of unity is key! Users see what appears to be a single, coherent system—like a seamless restaurant experience. Behind the scenes, multiple independent components (kitchen, bar, dining room = nodes in a distributed system) communicate through messages (orders, tickets) to create that illusion. The magic is in making the complexity invisible!"
+id = "f088678b-7873-4bcf-b4da-1269804ac0d4"
+
+[[questions]]
+type = "ShortAnswer"
+prompt.prompt = "A distributed systems student is confused. They ask: 'If there's no global clock, how do I know which event happened first?' You tell them about a type of clock that doesn't measure time, but instead tracks __________ between events."
+answer.answer = "causality"
+answer.alternatives = ["causal relationships", "event ordering", "happens-before relationships"]
+context = "Logical clocks don't measure time—they track causality! They help you answer 'did event A cause event B?' or 'did A happen before B?' This is possible without a global clock because causal relationships are transitive: if A caused B, and B caused C, then A caused C. We'll explore this more in later sessions!"
+id = "ec20be6f-7033-4e2f-9ffd-11b5fded6135"

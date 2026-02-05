@@ -1,0 +1,14 @@
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "What triggers a follower to start an election?"
+prompt.distractors = ["Receiving client request", "Election timeout expires", "Log grows too large"]
+answer.answer = "Election timeout expires"
+context = "When a follower doesn't receive heartbeats before timeout, it assumes leader failure and starts a new election."
+id = "a1c4817a-dfef-44e0-8543-657db60f45f1"
+
+[[questions]]
+type = "ShortAnswer"
+prompt.prompt = "What's a split vote in Raft elections?"
+answer.answer = "tie"
+context = "Split vote = tie, no majority wins. Randomized timeouts make split votes rare—followers time out at different times, so one candidate usually wins."
+id = "0dab64c6-86d6-419a-ac5d-2dedd8f4220a"

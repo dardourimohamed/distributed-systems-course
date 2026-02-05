@@ -1,0 +1,14 @@
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "What do safety and liveness mean in consensus?"
+prompt.distractors = ["Speed and reliability", "All agree and eventually decide", "Consistency and availability"]
+answer.answer = "All agree and eventually decide"
+context = "Safety = all correct nodes agree on the same value. Liveness = all correct nodes eventually decide (not stuck forever)."
+id = "413a1325-d83f-4531-9559-f78bbb60cff1"
+
+[[questions]]
+type = "ShortAnswer"
+prompt.prompt = "What's the FLP impossibility result about?"
+answer.answer = "impossible in async systems"
+context = "FLP proves consensus is impossible in asynchronous systems with even one faulty process. Real systems avoid this with timeouts and failure detectors."
+id = "5efe27db-f4d8-447c-9366-90b40bb0eccc"

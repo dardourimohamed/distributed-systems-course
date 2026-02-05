@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  node1:
+    build: .
+    container_name: store-ts-node1
+    ports:
+      - "4001:4000"
+    environment:
+      - NODE_ID=node-1
+      - PORT=4000
+      - PEERS=http://node2:4000,http://node3:4000
+    networks:
+      - store-network
+    command: sh -c "npm run build && node dist/node.js"
+
+  node2:
+    build: .
+    container_name: store-ts-node2
+    ports:
+      - "4002:4000"
+    environment:
+      - NODE_ID=node-2
+      - PORT=4000
+      - PEERS=http://node1:4000,http://node3:4000
+    networks:
+      - store-network
+    command: sh -c "npm run build && node dist/node.js"
+
+  node3:
+    build: .
+    container_name: store-ts-node3
+    ports:
+      - "4003:4000"
+    environment:
+      - NODE_ID=node-3
+      - PORT=4000
+      - PEERS=http://node1:4000,http://node2:4000
+    networks:
+      - store-network
+    command: sh -c "npm run build && node dist/node.js"
+
+networks:
+  store-network:
+    driver: bridge

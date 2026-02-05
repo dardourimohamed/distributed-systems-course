@@ -1,0 +1,14 @@
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "What's the key difference between synchronous and asynchronous messaging?"
+prompt.distractors = ["Sync is faster", "Async blocks the caller", "Sync waits for response; async continues immediately"]
+answer.answer = "Sync waits for response; async continues immediately"
+context = "Synchronous messaging blocks until a response arrives. Asynchronous messaging sends and continues without waiting—better throughput but more complex error handling."
+id = "77507da6-6e8c-4d55-94b4-0e1f5608a2bd"
+
+[[questions]]
+type = "ShortAnswer"
+prompt.prompt = "What delivery guarantee means 'message may be lost, never duplicated'?"
+answer.answer = "at-most-once"
+context = "At-most-once means messages may be lost but will never be duplicated. Good for logging and metrics where losing data is acceptable."
+id = "b51b5f1c-ed2c-49fd-8f55-b79716b3beb2"

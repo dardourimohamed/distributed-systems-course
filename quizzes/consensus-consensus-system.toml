@@ -1,0 +1,14 @@
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "What should be stored in the Raft log vs the state machine?"
+prompt.distractors = ["Everything in log", "Operations in log, data in state machine", "Data in log, operations in state machine"]
+answer.answer = "Operations in log, data in state machine"
+context = "The log stores operations (PUT, DELETE). The state machine holds the actual data. Log provides agreement on operation sequence."
+id = "9cf1e20d-fe29-4174-b0d3-8d366fe8586c"
+
+[[questions]]
+type = "ShortAnswer"
+prompt.prompt = "What's the purpose of snapshots in Raft?"
+answer.answer = "log compaction"
+context = "Snapshots capture state machine state at a point in time, allowing log entries before that point to be discarded. Prevents unbounded log growth."
+id = "386465ab-4359-4b1c-8383-8433eb2d63d3"

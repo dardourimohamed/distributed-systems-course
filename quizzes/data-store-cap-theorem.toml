@@ -1,0 +1,14 @@
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "In CAP theorem, which component is mandatory in distributed systems?"
+prompt.distractors = ["Consistency", "Availability", "Partition Tolerance"]
+answer.answer = "Partition Tolerance"
+context = "Partition tolerance is not optional—network partitions WILL happen in distributed systems. The real choice is between C and A during a partition."
+id = "05a14de0-b778-4b0f-b2a7-312b8447666c"
+
+[[questions]]
+type = "ShortAnswer"
+prompt.prompt = "What consistency model guarantees that if no new updates are made, eventually all accesses will return the last updated value?"
+answer.answer = "eventual consistency"
+context = "Eventual consistency means the system converges over time. If updates stop, all replicas eventually agree. Great for availability, weaker than strong consistency."
+id = "1cef3167-cd2e-4e1c-8e41-51d77db7b93c"
