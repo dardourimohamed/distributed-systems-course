@@ -2,7 +2,7 @@
 
 [book]
 title = "Distributed Systems Course"
-authors = ["Course Authors"]
+authors = ["Mohamed Dardouri"]
 description = "A comprehensive course on distributed systems from fundamentals to consensus"
 language = "en"
 src = "src"
