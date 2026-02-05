@@ -6,3 +6,5 @@
 {"ts":"2026-02-05T15:29:24.588612440Z","type":{"kind":"loop_completed","reason":"completion_promise"}}
 {"ts":"2026-02-05T16:36:50.584400237Z","type":{"kind":"loop_started","prompt":"properly mention the author, you can find more details on me on https://med.dardouri.com/contact"}}
 {"ts":"2026-02-05T16:42:05.737970446Z","type":{"kind":"loop_completed","reason":"completion_promise"}}
+{"ts":"2026-02-05T16:48:04.377133413Z","type":{"kind":"loop_started","prompt":"make sure TS and python code blocks are properly colored"}}
+{"ts":"2026-02-05T16:56:11.748451534Z","type":{"kind":"loop_completed","reason":"completion_promise"}}
