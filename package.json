@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "build": "mdbook build",
-    "deploy": "npm run build && wrangler pages deploy book --project-name=distributed-systems-course --branch=production"
+    "deploy": "npm run build && wrangler pages deploy book --project-name=distributed-systems-course --branch=main"
   },
   "devDependencies": {
     "wrangler": "^4.63.0"
