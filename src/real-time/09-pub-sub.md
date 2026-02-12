@@ -1,37 +1,37 @@
-# Pub/Sub Messaging and Message Ordering
+# Messagerie Pub/Sub et Ordonnancement des Messages
 
-> **Session 7, Part 1** - 45 minutes
+> **Session 7, Partie 1** - 45 minutes
 
-## Learning Objectives
+## Objectifs d'apprentissage
 
-- [ ] Understand the publish-subscribe messaging pattern
-- [ ] Learn about topic-based and content-based routing
-- [ ] Implement presence tracking and subscriptions
-- [ ] Understand message ordering challenges in distributed systems
-- [ ] Implement sequence numbers for causal ordering
+- [ ] Comprendre le modèle de messagerie publish-subscribe
+- [ ] Apprendre le routage basé sur les sujets et le routage basé sur le contenu
+- [ ] Implémenter le suivi de présence et les abonnements
+- [ ] Comprendre les défis de l'ordonnancement des messages dans les systèmes distribués
+- [ ] Implémenter des numéros de séquence pour l'ordonnancement causal
 
-## What is Pub/Sub?
+## Qu'est-ce que Pub/Sub ?
 
-The **publish-subscribe pattern** is a messaging pattern where senders (publishers) send messages to an intermediate system, and the system routes messages to interested receivers (subscribers). Publishers and subscribers are **decoupled**—they don't know about each other.
+Le **modèle publish-subscribe** est un modèle de messagerie où les expéditeurs (publishers) envoient des messages à un système intermédiaire, et le système achemine les messages aux récepteurs intéressés (subscribers). Les publishers et subscribers sont **découplés** - ils ne se connaissent pas.
 
-### Key Benefits
+### Avantages clés
 
-1. **Decoupling**: Publishers don't need to know who subscribes
-2. **Scalability**: Add subscribers without changing publishers
-3. **Flexibility**: Dynamic subscription management
-4. **Asynchrony**: Publishers send and continue; subscribers process when ready
+1. **Découplage** : Les publishers n'ont pas besoin de savoir qui s'abonne
+2. **Extensibilité** : Ajouter des subscribers sans modifier les publishers
+3. **Flexibilité** : Gestion dynamique des abonnements
+4. **Asynchronie** : Les publishers envoient et continuent ; les subscribers traitent quand ils sont prêts
 
-### Pub/Sub vs Direct Messaging
+### Pub/Sub vs Messagerie directe
 
 ```mermaid
 graph TB
-    subgraph "Direct Messaging"
+    subgraph "Messagerie directe"
         P1[Producer] -->|Direct| C1[Consumer 1]
         P1 -->|Direct| C2[Consumer 2]
         P1 -->|Direct| C3[Consumer 3]
     end
 
-    subgraph "Pub/Sub Messaging"
+    subgraph "Messagerie Pub/Sub"
         P2[Publisher] -->|Publish| B[Broker]
         S1[Subscriber 1] -->|Subscribe| B
         S2[Subscriber 2] -->|Subscribe| B
@@ -39,18 +39,18 @@ graph TB
     end
 ```
 
-| Aspect | Direct Messaging | Pub/Sub |
-|--------|-----------------|---------|
-| Coupling | Tight (producer knows consumers) | Loose (producer doesn't know consumers) |
-| Flexibility | Low (changes affect producer) | High (dynamic subscriptions) |
-| Complexity | Simple | Moderate (requires broker) |
-| Use Case | Point-to-point, request-response | Broadcast, events, notifications |
+| Aspect | Messagerie directe | Pub/Sub |
+|--------|-------------------|---------|
+| Couplage | Fort (le producteur connaît les consumers) | Faible (le producteur ne connaît pas les consumers) |
+| Flexibilité | Faible (les changements affectent le producteur) | Élevée (abonnements dynamiques) |
+| Complexité | Simple | Modérée (nécessite un broker) |
+| Cas d'usage | Point-à-point, requête-réponse | Diffusion, événements, notifications |
 
-## Pub/Sub Patterns
+## Modèles Pub/Sub
 
-### 1. Topic-Based Routing
+### 1. Routage basé sur les sujets
 
-Subscribers express interest in **topics** (channels). Messages are routed based on the topic they're published to.
+Les subscribers expriment leur intérêt pour des **sujets** (channels). Les messages sont acheminés en fonction du sujet auquel ils sont publiés.
 
 ```mermaid
 sequenceDiagram
@@ -60,12 +60,12 @@ sequenceDiagram
     participant B as Broker
     participant P as Publisher
 
-    Note over S1,S3: Subscription Phase
+    Note over S1,S3: Phase d'abonnement
     S1->>B: subscribe("sports")
     S2->>B: subscribe("sports")
     S3->>B: subscribe("news")
 
-    Note over S1,S3: Publishing Phase
+    Note over S1,S3: Phase de publication
     P->>B: publish("sports", "Game starts!")
     B->>S1: deliver("Game starts!")
     B->>S2: deliver("Game starts!")
@@ -74,11 +74,11 @@ sequenceDiagram
     B->>S3: deliver("Breaking story!")
 ```
 
-**Use cases**: Chat rooms, notification categories, event streams
+**Cas d'usage** : Salles de chat, catégories de notifications, flux d'événements
 
-### 2. Content-Based Routing
+### 2. Routage basé sur le contenu
 
-Subscribers specify **filter criteria**. Messages are routed based on their content.
+Les subscribers spécifient des **critères de filtrage**. Les messages sont acheminés en fonction de leur contenu.
 
 ```mermaid
 graph LR
@@ -88,51 +88,51 @@ graph LR
     B -.->|No match| S3[Low-Value Handler]
 ```
 
-**Use cases**: Event filtering, complex routing rules, IoT sensor data
+**Cas d'usage** : Filtrage d'événements, règles de routage complexes, données de capteurs IoT
 
-### 3. Presence Tracking
+### 3. Suivi de présence
 
-In real-time systems, knowing **who is online** (presence) is essential for:
+Dans les systèmes en temps réel, savoir **qui est en ligne** (presence) est essentiel pour :
 
-- Showing online/offline status
-- Delivering messages only to active users
-- Managing connections and reconnections
-- Handling user disconnections gracefully
+- Afficher le statut en ligne/hors ligne
+- Livrer les messages uniquement aux utilisateurs actifs
+- Gérer les connexions et reconnexions
+- Gérer gracieusement les déconnexions utilisateurs
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Offline: User created
-    Offline --> Connecting: Connect request
-    Connecting --> Online: Auth success
-    Connecting --> Offline: Auth fail
-    Online --> Away: No activity
-    Online --> Offline: Disconnect
-    Away --> Online: Activity detected
-    Online --> [*]: User deleted
+    [*] --> Offline: Utilisateur créé
+    Offline --> Connecting: Demande de connexion
+    Connecting --> Online: Auth réussie
+    Connecting --> Offline: Auth échouée
+    Online --> Away: Pas d'activité
+    Online --> Offline: Déconnexion
+    Away --> Online: Activité détectée
+    Online --> [*]: Utilisateur supprimé
 ```
 
-## Message Ordering
+## Ordonnancement des messages
 
-### The Ordering Problem
+### Le problème de l'ordonnancement
 
-In distributed systems, messages may arrive **out of order** due to:
+Dans les systèmes distribués, les messages peuvent arriver **dans le désordre** en raison de :
 
-- Network latency variations
-- Multiple servers processing messages
-- Message retries and retransmissions
-- Concurrent publishers
+- Variations de latence réseau
+- Serveurs multiples traitant des messages
+- Nouvelles tentatives et retransmissions de messages
+- Publishers simultanés
 
-### Types of Ordering
+### Types d'ordonnancement
 
-| Ordering Type | Description | Difficulty |
-|--------------|-------------|------------|
-| **FIFO** | Messages from same sender arrive in order sent | Easy |
-| **Causal** | Causally related messages are ordered | Moderate |
-| **Total** | All messages ordered globally | Hard |
+| Type d'ordonnancement | Description | Difficulté |
+|----------------------|-------------|------------|
+| **FIFO** | Les messages du même expéditeur arrivent dans l'ordre d'envoi | Facile |
+| **Causal** | Les messages causalement liés sont ordonnés | Modérée |
+| **Total** | Tous les messages sont ordonnés globalement | Difficile |
 
-### Why Ordering Matters
+### Pourquoi l'ordonnancement est important
 
-Consider a chat application:
+Considérons une application de chat :
 
 ```mermaid
 sequenceDiagram
@@ -140,16 +140,16 @@ sequenceDiagram
     participant S as Server
     participant B as Bob
 
-    Note over A,B: Without ordering - confusion!
+    Note over A,B: Sans ordonnancement - confusion !
     A->>S: "Let's meet at 5pm"
     A->>S: "Never mind, 6pm instead"
     S--xB: "Never mind, 6pm instead"
     S--xB: "Let's meet at 5pm"
 
-    Note over B: Bob sees messages out of order!
+    Note over B: Bob voit les messages dans le désordre !
 ```
 
-With proper ordering using **sequence numbers**:
+Avec un ordonnancement approprié utilisant des **numéros de séquence** :
 
 ```mermaid
 sequenceDiagram
@@ -157,26 +157,26 @@ sequenceDiagram
     participant S as Server
     participant B as Bob
 
-    Note over A,B: With sequence numbers - correct!
+    Note over A,B: Avec numéros de séquence - correct !
     A->>S: [msg#1] "Let's meet at 5pm"
     A->>S: [msg#2] "Never mind, 6pm instead"
 
     S--xB: [msg#1] "Let's meet at 5pm"
     S--xB: [msg#2] "Never mind, 6pm instead"
 
-    Note over B: Bob delivers in order by sequence number
+    Note over B: Bob livre dans l'ordre par numéro de séquence
 ```
 
-## Implementation: Pub/Sub Chat with Ordering
+## Implémentation : Chat Pub/Sub avec ordonnancement
 
-Let's build a pub/sub chat system with:
-- Topic-based routing (chat rooms)
-- Presence tracking
-- Message ordering with sequence numbers
+Construisons un système de chat pub/sub avec :
+- Routage basé sur les sujets (salles de chat)
+- Suivi de présence
+- Ordonnancement des messages avec numéros de séquence
 
-### TypeScript Implementation
+### Implémentation TypeScript
 
-**pubsub-server.ts** - Pub/Sub server with ordering:
+**pubsub-server.ts** - Serveur Pub/Sub avec ordonnancement :
 
 ```typescript
 // src: examples/03-chat/ts/pubsub-server.ts
@@ -263,13 +263,13 @@ class PubSubServer {
     const subscriber = this.subscribers.get(subscriberId)!;
     subscriber.rooms.add(room);
 
-    // Initialize room state if needed
+    // Initialiser l'état de la salle si nécessaire
     if (!this.roomSequences.has(room)) {
       this.roomSequences.set(room, 0);
       this.messageHistory.set(room, []);
     }
 
-    // Send presence notification
+    // Envoyer une notification de présence
     this.broadcast(room, {
       type: 'presence',
       userId,
@@ -277,7 +277,7 @@ class PubSubServer {
       timestamp: Date.now(),
     });
 
-    // Send current sequence number
+    // Envoyer le numéro de séquence actuel
     ws.send(JSON.stringify({
       type: 'subscribed',
       room,
@@ -292,7 +292,7 @@ class PubSubServer {
     if (subscriber) {
       subscriber.rooms.delete(room);
 
-      // Send presence notification
+      // Envoyer une notification de présence
       this.broadcast(room, {
         type: 'presence',
         userId: subscriber.userId,
@@ -316,12 +316,12 @@ class PubSubServer {
       timestamp: Date.now(),
     };
 
-    // Store in history
+    // Stocker dans l'historique
     const history = this.messageHistory.get(room) || [];
     history.push(message);
-    this.messageHistory.set(room, history.slice(-100)); // Keep last 100
+    this.messageHistory.set(room, history.slice(-100)); // Garder les 100 derniers
 
-    // Broadcast to all subscribers
+    // Diffuser à tous les subscribers
     this.broadcast(room, {
       type: 'message',
       ...message,
@@ -350,7 +350,7 @@ class PubSubServer {
   private handleDisconnect(subscriberId: string) {
     const subscriber = this.subscribers.get(subscriberId);
     if (subscriber) {
-      // Notify all rooms the user was in
+      // Notifier toutes les salles où l'utilisateur était
       for (const room of subscriber.rooms) {
         this.broadcast(room, {
           type: 'presence',
@@ -372,7 +372,7 @@ const PORT = parseInt(process.env.PORT || '8080');
 new PubSubServer(PORT);
 ```
 
-**pubsub-client.ts** - Client with ordering buffer:
+**pubsub-client.ts** - Client avec tampon d'ordonnancement :
 
 ```typescript
 // src: examples/03-chat/ts/pubsub-client.ts
@@ -446,7 +446,7 @@ class PubSubClient {
   private handleOrderedMessage(room: string, msg: ClientMessage) {
     const seq = msg.sequence!;
 
-    // Initialize buffer if needed
+    // Initialiser le tampon si nécessaire
     if (!this.messageBuffer.has(room)) {
       this.messageBuffer.set(room, new Map());
     }
@@ -454,18 +454,18 @@ class PubSubClient {
     const expected = this.expectedSequence.get(room) || 1;
 
     if (seq === expected) {
-      // Expected message - deliver immediately
+      // Message attendu - livrer immédiatement
       this.displayMessage(msg);
       this.expectedSequence.set(room, seq + 1);
 
-      // Check buffer for next messages
+      // Vérifier le tampon pour les messages suivants
       this.deliverBufferedMessages(room);
     } else if (seq > expected) {
-      // Future message - buffer it
+      // Message futur - le mettre en tampon
       buffer.set(seq, msg);
       console.log(`Buffered message ${seq} (expecting ${expected})`);
     }
-    // seq < expected: old message, ignore
+    // seq < expected: ancien message, ignorer
   }
 
   private deliverBufferedMessages(room: string) {
@@ -526,14 +526,14 @@ class PubSubClient {
   }
 }
 
-// CLI usage
+// Usage en CLI
 const args = process.argv.slice(2);
 const url = args[0] || 'ws://localhost:8080';
 const client = new PubSubClient(url);
 
 client.connect();
 
-// Simple readline interface
+// Interface readline simple
 const readline = require('readline');
 const rl = readline.createInterface({
   input: process.stdin,
@@ -581,9 +581,9 @@ const showPrompt = () => {
 showPrompt();
 ```
 
-### Python Implementation
+### Implémentation Python
 
-**pubsub_server.py** - Pub/Sub server with ordering:
+**pubsub_server.py** - Serveur Pub/Sub avec ordonnancement :
 
 ```python
 # src: examples/03-chat/py/pubsub_server.py
@@ -651,12 +651,12 @@ class PubSubServer:
         subscriber = self.subscribers[subscriber_id]
         subscriber["rooms"].add(room)
 
-        # Initialize room state
+        # Initialiser l'état de la salle
         if room not in self.room_sequences:
             self.room_sequences[room] = 0
             self.message_history[room] = []
 
-        # Send presence notification
+        # Envoyer une notification de présence
         await self.broadcast(room, {
             "type": "presence",
             "userId": user_id,
@@ -664,7 +664,7 @@ class PubSubServer:
             "timestamp": int(time.time() * 1000),
         })
 
-        # Send current sequence number
+        # Envoyer le numéro de séquence actuel
         await ws.send(json.dumps({
             "type": "subscribed",
             "room": room,
@@ -702,12 +702,12 @@ class PubSubServer:
             timestamp=int(time.time() * 1000),
         )
 
-        # Store in history
+        # Stocker dans l'historique
         history = self.message_history[room]
         history.append(message)
-        self.message_history[room] = history[-100:]  # Keep last 100
+        self.message_history[room] = history[-100:]  # Garder les 100 derniers
 
-        # Broadcast
+        # Diffuser
         await self.broadcast(room, {
             "type": "message",
             **asdict(message),
@@ -737,7 +737,7 @@ class PubSubServer:
     async def handle_disconnect(self, subscriber_id: str):
         subscriber = self.subscribers.get(subscriber_id)
         if subscriber:
-            # Notify all rooms
+            # Notifier toutes les salles
             for room in list(subscriber["rooms"]):
                 await self.broadcast(room, {
                     "type": "presence",
@@ -765,7 +765,7 @@ if __name__ == "__main__":
     asyncio.run(server.start())
 ```
 
-**pubsub_client.py** - Client with ordering buffer:
+**pubsub_client.py** - Client avec tampon d'ordonnancement :
 
 ```python
 # src: examples/03-chat/py/pubsub_client.py
@@ -838,15 +838,15 @@ class PubSubClient:
         expected = self.expected_sequence.get(room, 1)
 
         if seq == expected:
-            # Expected message - deliver immediately
+            # Message attendu - livrer immédiatement
             self.display_message(msg)
             self.expected_sequence[room] = seq + 1
 
-            # Check buffer for next messages
+            # Vérifier le tampon pour les messages suivants
             await self.deliver_buffered_messages(room)
 
         elif seq > expected:
-            # Future message - buffer it
+            # Message futur - le mettre en tampon
             buffer[seq] = msg
             print(f"Buffered message {seq} (expecting {expected})")
 
@@ -902,7 +902,7 @@ async def main():
     client = PubSubClient(url)
     await client.connect()
 
-    # Simple CLI
+    # CLI simple
     current_room = ""
 
     print('Commands: /join <room>, /leave <room>, /history <room>, /quit')
@@ -938,41 +938,41 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-## Running the Examples
+## Exécution des exemples
 
-### TypeScript Version
+### Version TypeScript
 
 ```bash
 cd distributed-systems-course/examples/03-chat/ts
 
-# Install dependencies
+# Installer les dépendances
 npm install
 
-# Start the server
+# Démarrer le serveur
 PORT=8080 npx ts-node pubsub-server.ts
 
-# In another terminal, start a client
+# Dans un autre terminal, démarrer un client
 npx ts-node pubsub-client.ts
 ```
 
-### Python Version
+### Version Python
 
 ```bash
 cd distributed-systems-course/examples/03-chat/py
 
-# Install dependencies
+# Installer les dépendances
 pip install -r requirements.txt
 
-# Start the server
+# Démarrer le serveur
 PORT=8080 python pubsub_server.py
 
-# In another terminal, start a client
+# Dans un autre terminal, démarrer un client
 python pubsub_client.py
 ```
 
 ### Docker Compose
 
-**docker-compose.yml** (TypeScript):
+**docker-compose.yml** (TypeScript) :
 
 ```yaml
 services:
@@ -988,106 +988,106 @@ services:
 docker-compose up
 ```
 
-## Testing the Pub/Sub System
+## Test du système Pub/Sub
 
-### Test 1: Basic Pub/Sub
+### Test 1 : Pub/Sub de base
 
-1. Start three clients in separate terminals
-2. Client 1: `/join general`
-3. Client 2: `/join general`
-4. Client 1: `Hello everyone!`
-5. Client 2 should receive the message
-6. Client 3: `/join general`
-7. Client 3: `/history general` - should see previous messages
+1. Démarrer trois clients dans des terminaux séparés
+2. Client 1 : `/join general`
+3. Client 2 : `/join general`
+4. Client 1 : `Hello everyone!`
+5. Le client 2 devrait recevoir le message
+6. Client 3 : `/join general`
+7. Client 3 : `/history general` - devrait voir les messages précédents
 
-### Test 2: Multiple Rooms
+### Test 2 : Salles multiples
 
-1. Client 1: `/join sports`
-2. Client 2: `/join news`
-3. Client 1: `Game starting!` (only in sports)
-4. Client 2: `Breaking news!` (only in news)
-5. Client 3: `/join sports` and `/join news` (receives both)
+1. Client 1 : `/join sports`
+2. Client 2 : `/join news`
+3. Client 1 : `Game starting!` (uniquement dans sports)
+4. Client 2 : `Breaking news!` (uniquement dans news)
+5. Client 3 : `/join sports` et `/join news` (reçoit les deux)
 
-### Test 3: Message Ordering
+### Test 3 : Ordonnancement des messages
 
-1. Start a client and join a room
-2. Send messages rapidly: `msg1`, `msg2`, `msg3`
-3. Observe sequence numbers: `[1]`, `[2]`, `[3]`
-4. Note the order is preserved
+1. Démarrer un client et rejoindre une salle
+2. Envoyer des messages rapidement : `msg1`, `msg2`, `msg3`
+3. Observer les numéros de séquence : `[1]`, `[2]`, `[3]`
+4. Noter que l'ordre est préservé
 
-### Test 4: Presence Tracking
+### Test 4 : Suivi de présence
 
-1. Start two clients
-2. Both join the same room
-3. Observe presence notifications (user joined/left)
-4. Disconnect one client (Ctrl+C)
-5. Other client receives leave notification
+1. Démarrer deux clients
+2. Les deux rejoignent la même salle
+3. Observer les notifications de présence (utilisateur rejoint/parti)
+4. Déconnecter un client (Ctrl+C)
+5. L'autre client reçoit la notification de départ
 
-## Exercises
+## Exercices
 
-### Exercise 1: Implement Last-Message Cache
+### Exercice 1 : Implémenter le cache des derniers messages
 
-Add a feature to store only the **last N messages** per room (already implemented as 100 in the code).
+Ajouter une fonctionnalité pour stocker uniquement les **derniers N messages** par salle (déjà implémenté comme 100 dans le code).
 
-**Tasks**:
-- Make the history size configurable via environment variable
-- Add a `/clear_history` command for admins
-- Add TTL (time-to-live) for old messages
+**Tâches** :
+- Rendre la taille de l'historique configurable via une variable d'environnement
+- Ajouter une commande `/clear_history` pour les administrateurs
+- Ajouter un TTL (time-to-live) pour les anciens messages
 
-### Exercise 2: Implement Private Messages
+### Exercice 2 : Implémenter les messages privés
 
-Extend the system to support **direct messages** between users.
+Étendre le système pour prendre en charge les **messages directs** entre utilisateurs.
 
-**Requirements**:
-- Private messages should only be delivered to the recipient
-- Use a special topic format: `@username`
-- Include sender authentication
+**Exigences** :
+- Les messages privés ne doivent être livrés qu'au destinataire
+- Utiliser un format de sujet spécial : `@username`
+- Inclure l'authentification de l'expéditeur
 
-**Hint**: You'll need to modify the `handlePublish` method to check for `@` prefix.
+**Indice** : Vous devrez modifier la méthode `handlePublish` pour vérifier le préfixe `@`.
 
-### Exercise 3: Add Message Acknowledgments
+### Exercice 3 : Ajouter les accusés de réception de messages
 
-Implement **acknowledgments** to guarantee message delivery.
+Implémenter des **accusés de réception** pour garantir la livraison des messages.
 
-**Requirements**:
-- Clients must ACK received messages
-- Server tracks unacknowledged messages
-- On reconnect, server resends unacknowledged messages
+**Exigences** :
+- Les clients doivent ACK les messages reçus
+- Le serveur suit les messages non accusés
+- À la reconnexion, le serveur renvoie les messages non accusés
 
-**Hint**: Add an `ack` message type and track pending messages per subscriber.
+**Indice** : Ajoutez un type de message `ack` et suivez les messages en attente par subscriber.
 
-## Common Pitfalls
+## Pièges courants
 
-| Pitfall | Symptom | Solution |
+| Piège | Symptôme | Solution |
 |--------|---------|----------|
-| Sequence number desync | Messages not displayed | Re-subscribe to reset sequence |
-| Memory leak from history | Growing memory usage | Implement history size limits |
-| Missing presence updates | Stale online status | Add heartbeat/ping messages |
-| Race conditions | Messages lost during reconnect | Buffer messages during disconnection |
+| Désynchronisation des numéros de séquence | Messages non affichés | Se réabonner pour réinitialiser la séquence |
+| Fuite de mémoire de l'historique | Utilisation mémoire croissante | Implémenter des limites de taille d'historique |
+| Mises à jour de présence manquantes | Statut en ligne obsolète | Ajouter des messages heartbeat/ping |
+| Conditions de course | Messages perdus lors de la reconnexion | Mettre en tampon les messages pendant la déconnexion |
 
-## Real-World Examples
+## Exemples réels
 
-| System | Pub/Sub Implementation | Ordering Strategy |
-|--------|----------------------|-------------------|
-| **Redis Pub/Sub** | Topic-based channels | No ordering guarantees |
-| **Apache Kafka** | Partitioned topics | Per-partition ordering |
-| **Google Cloud Pub/Sub** | Topic-based with subscriptions | Exactly-once delivery |
-| **AWS SNS** | Topic-based fanout | Best-effort ordering |
-| **RabbitMQ** | Exchange/queue binding | FIFO within queue |
+| Système | Implémentation Pub/Sub | Stratégie d'ordonnancement |
+|--------|------------------------|---------------------------|
+| **Redis Pub/Sub** | Canaux basés sur des sujets | Aucune garantie d'ordonnancement |
+| **Apache Kafka** | Sujets partitionnés | Ordonnancement par partition |
+| **Google Cloud Pub/Sub** | Sujets avec abonnements | Livraison exactement une fois |
+| **AWS SNS** | Diffusion basée sur des sujets | Ordonnancement au mieux (best-effort) |
+| **RabbitMQ** | Liaison exchange/queue | FIFO dans la file |
 
-## Summary
+## Résumé
 
-- **Pub/Sub** decouples publishers from subscribers through an intermediary broker
-- **Topic-based routing** is the simplest and most common pattern
-- **Presence tracking** enables online/offline status in real-time systems
-- **Message ordering** requires sequence numbers and buffering
-- **Causal ordering** is achievable with modest complexity
-- **Total ordering** is expensive and often unnecessary
+- **Pub/Sub** découple les publishers des subscribers via un broker intermédiaire
+- **Le routage basé sur les sujets** est le modèle le plus simple et le plus courant
+- **Le suivi de présence** permet le statut en ligne/hors ligne dans les systèmes temps réel
+- **L'ordonnancement des messages** nécessite des numéros de séquence et la mise en tampon
+- **L'ordonnancement causal** est réalisable avec une complexité modeste
+- **L'ordonnancement total** est coûteux et souvent inutile
 
-Next: [Chat System Implementation →](./10-chat-system.md)
+Suivant : [Implémentation du système de chat →](./10-chat-system.md)
 
-## 🧠 Chapter Quiz
+## 🧠 Quiz du chapitre
 
-Test your mastery of these concepts! These questions will challenge your understanding and reveal any gaps in your knowledge.
+Testez votre maîtrise de ces concepts ! Ces questions mettront au défi votre compréhension et révéleront les lacunes dans vos connaissances.
 
 {{#quiz ../../quizzes/real-time-pub-sub.toml}}

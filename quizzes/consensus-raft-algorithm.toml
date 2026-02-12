@@ -1,14 +1,15 @@
 [[questions]]
 type = "MultipleChoice"
-prompt.prompt = "Why does Raft use a strong leader approach?"
-prompt.distractors = ["Leaders are faster", "Simpler to understand", "More reliable"]
-answer.answer = "Simpler to understand"
-context = "Raft restricts log entries to flow only from leader to followers. This simplifies the algorithm—no concurrent proposals or complex conflict resolution."
+prompt.prompt = "Pourquoi Raft utilise-t-il une approche de leader fort ?"
+prompt.distractors = ["Les leaders sont plus rapides", "Plus simple à comprendre", "Plus fiable"]
+answer.answer = "Plus simple à comprendre"
+context = "Raft restreint les entrées de journal à ne circuler que du leader vers les suiveurs. Cela simplifie l'algorithme — pas de propositions concurrentes ou de résolution de conflits complexe."
 id = "8a7bbe0b-51c6-4767-a8e0-bf02a5a0d817"
 
 [[questions]]
 type = "ShortAnswer"
-prompt.prompt = "What's the term in Raft that represents the current election period?"
-answer.answer = "term"
-context = "Terms represent logical time for elections. Each election increments the term. Higher term means more recent leader. Terms help detect stale leaders."
+prompt.prompt = "Quel est le terme dans Raft qui représente la période d'élection actuelle ?"
+answer.answer = "terme"
+answer.alternatives = ["term", "mandat"]
+context = "Les termes représentent le temps logique pour les élections. Chaque élection incrémente le terme. Un terme plus élevé signifie un leader plus récent. Les termes aident à détecter les leaders obsolètes."
 id = "0ab18b01-2734-4c94-b9ca-a062642fcffa"

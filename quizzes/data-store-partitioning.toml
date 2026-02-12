@@ -1,14 +1,15 @@
 [[questions]]
 type = "MultipleChoice"
-prompt.prompt = "What's the main advantage of hash-based partitioning?"
-prompt.distractors = ["Efficient range queries", "Even data distribution", "Faster writes"]
-answer.answer = "Even data distribution"
-context = "Hash partitioning distributes data uniformly across nodes, preventing hot spots. Trade-off: can't do efficient range queries."
+prompt.prompt = "Quel est le principal avantage du partitionnement par hachage ?"
+prompt.distractors = ["Requêtes de plage efficaces", "Distribution uniforme des données", "Écritures plus rapides"]
+answer.answer = "Distribution uniforme des données"
+context = "Le partitionnement par hachage distribue les données uniformément sur les nœuds, empêchant les points chauds. Compromis : impossible de faire des requêtes de plage efficaces."
 id = "b2aaab0a-a0e6-4001-8ce3-2fdfa5319adf"
 
 [[questions]]
 type = "ShortAnswer"
-prompt.prompt = "What partitioning strategy is ideal for time-series data?"
-answer.answer = "range partitioning"
-context = "Range partitioning by time is perfect for time-series—query a specific time range only touches specific partitions."
+prompt.prompt = "Quelle stratégie de partitionnement est idéale pour les données de séries temporelles ?"
+answer.answer = "partitionnement par plage"
+answer.alternatives = ["range partitioning", "partitionnement par intervalle", "partitionnement par étendue"]
+context = "Le partitionnement par plage par temps est parfait pour les séries temporelles — interroger une plage de temps spécifique ne touche que des partitions spécifiques."
 id = "e0762093-139c-49d7-bb3d-240117b47112"

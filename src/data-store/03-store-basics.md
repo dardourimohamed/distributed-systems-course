@@ -1,28 +1,28 @@
-# Store System Basics
+# Bases du Système de Magasin
 
-> **Session 3, Part 3** - 35 minutes (coding demo + hands-on)
+> **Session 3, Partie 3** - 35 minutes (démo de codage + pratique)
 
-## Learning Objectives
+## Objectifs d'Apprentissage
 
-- [ ] Understand the key-value store data model
-- [ ] Build a single-node key-value store in TypeScript
-- [ ] Build the same store in Python
-- [ ] Deploy and test the store using Docker Compose
-- [ ] Perform basic read/write operations via HTTP
+- [ ] Comprendre le modèle de données clé-valeur
+- [ ] Construire un magasin clé-valeur à nœud unique en TypeScript
+- [ ] Construire le même magasin en Python
+- [ ] Déployer et tester le magasin en utilisant Docker Compose
+- [ ] Effectuer des opérations de lecture/écriture de base via HTTP
 
-## What is a Key-Value Store?
+## Qu'est-ce qu'un Magasin Clé-Valeur ?
 
-A **key-value store** is the simplest type of database:
+Un **magasin clé-valeur** est le type le plus simple de base de données :
 
 ```mermaid
 graph LR
-    subgraph "Key-Value Store"
-        KV[("Data Store")]
+    subgraph "Magasin Clé-Valeur"
+        KV[("Magasin de Données")]
 
-        K1["name"] --> V1[""Alice""]
-        K2["age"] --> V2["30"]
-        K3["city"] --> V3[""NYC""]
-        K4["active"] --> V4["true"]
+        K1["nom"] --> V1[""Alice""]
+        K2["âge"] --> V2["30"]
+        K3["ville"] --> V3[""NYC""]
+        K4["actif"] --> V4["true"]
 
         K1 --> KV
         K2 --> KV
@@ -31,71 +31,72 @@ graph LR
     end
 ```
 
-**Key Characteristics:**
-- Simple data model: key → value
-- Fast lookups by key
-- No complex queries
-- Schema-less
+**Caractéristiques Clés :**
+- Modèle de données simple : clé → valeur
+- Recherches rapides par clé
+- Pas de requêtes complexes
+- Sans schéma
 
-## Basic Operations
+## Opérations de Base
 
-| Operation | Description | Example |
+| Opération | Description | Exemple |
 |-----------|-------------|---------|
-| **SET** | Store a value for a key | `SET user:1 Alice` |
-| **GET** | Retrieve a value by key | `GET user:1` → "Alice" |
-| **DELETE** | Remove a key | `DELETE user:1` |
+| **SET** | Stocker une valeur pour une clé | `SET user:1 Alice` |
+| **GET** | Récupérer une valeur par clé | `GET user:1` → "Alice" |
+| **DELETE** | Supprimer une clé | `DELETE user:1` |
 
 ```mermaid
 stateDiagram-v2
-    [*] --> NotExists
-    NotExists --> Exists: SET key
-    Exists --> Exists: SET key (update)
-    Exists --> NotExists: DELETE key
-    Exists --> Exists: GET key (read)
-    NotExists --> [*]: GET key (null)
+    [*] --> NonExistant
+    NonExistant --> Existant: SET clé
+    Existant --> Existant: SET clé (mise à jour)
+    Existant --> NonExistant: DELETE clé
+    Existant --> Existant: GET clé (lecture)
+    NonExistant --> [*]: GET clé (null)
 ```
 
-## Implementation
+## Implémentation
 
-We'll build a simple HTTP-based key-value store with REST API endpoints.
+Nous allons construire un simple magasin clé-valeur basé sur HTTP avec des points de terminaison API REST.
 
-### API Design
+### Conception de l'API
 
 ```
-GET    /key/{key}      - Get value by key
-PUT    /key/{key}      - Set value for key
-DELETE /key/{key}      - Delete key
-GET    /keys           - List all keys
+GET    /key/{clé}      - Obtenir la valeur par clé
+PUT    /key/{clé}      - Définir la valeur pour la clé
+DELETE /key/{clé}      - Supprimer la clé
+GET    /keys           - Lister toutes les clés
 ```
 
 ---
 
-## TypeScript Implementation
+## Implémentation TypeScript
 
-### Project Structure
+### Structure du Projet
+
 ```
 store-basics-ts/
 ├── package.json
 ├── tsconfig.json
 ├── Dockerfile
 └── src/
-    └── store.ts       # Complete store implementation
+    └── store.ts       # Implémentation complète du magasin
 ```
 
-### Complete TypeScript Code
+### Code TypeScript Complet
 
 **store-basics-ts/src/store.ts**
 ```typescript
 import http from 'http';
 
 /**
- * Simple in-memory key-value store
+ * Magasin clé-valeur simple en mémoire
  */
 class KeyValueStore {
   private data: Map<string, any> = new Map();
 
   /**
-   * Set a key-value pair
+   * Définir une paire clé-valeur
    */
   set(key: string, value: any): void {
     this.data.set(key, value);
@@ -103,7 +104,7 @@ class KeyValueStore {
   }
 
   /**
-   * Get a value by key
+   * Obtenir une valeur par clé
    */
   get(key: string): any {
     const value = this.data.get(key);
@@ -112,23 +113,23 @@ class KeyValueStore {
   }
 
   /**
-   * Delete a key
+   * Supprimer une clé
    */
   delete(key: string): boolean {
     const existed = this.data.delete(key);
-    console.log(`[Store] DELETE ${key} => ${existed ? 'success' : 'not found'}`);
+    console.log(`[Store] DELETE ${key} => ${existed ? 'succès' : 'non trouvé'}`);
     return existed;
   }
 
   /**
-   * Get all keys
+   * Obtenir toutes les clés
    */
   keys(): string[] {
     return Array.from(this.data.keys());
   }
 
   /**
-   * Get store statistics
+   * Obtenir les statistiques du magasin
    */
   stats() {
     return {
@@ -138,14 +139,14 @@ class KeyValueStore {
   }
 }
 
-// Create the store instance
+// Créer l'instance du magasin
 const store = new KeyValueStore();
 
 /**
- * HTTP Server with key-value API
+ * Serveur HTTP avec API clé-valeur
  */
 const server = http.createServer((req, res) => {
-  // Enable CORS
+  // Activer CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -156,19 +157,19 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Parse URL
+  // Analyser l'URL
   const url = new URL(req.url || '', `http://${req.headers.host}`);
 
-  // Route: GET /keys - List all keys
+  // Route : GET /keys - Lister toutes les clés
   if (req.method === 'GET' && url.pathname === '/keys') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(store.stats()));
     return;
   }
 
-  // Route: GET /key/{key} - Get value
+  // Route : GET /key/{clé} - Obtenir la valeur
   if (req.method === 'GET' && url.pathname.startsWith('/key/')) {
-    const key = url.pathname.slice(5); // Remove '/key/'
+    const key = url.pathname.slice(5); // Retirer '/key/'
     const value = store.get(key);
 
     if (value !== undefined) {
@@ -181,9 +182,9 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Route: PUT /key/{key} - Set value
+  // Route : PUT /key/{clé} - Définir la valeur
   if (req.method === 'PUT' && url.pathname.startsWith('/key/')) {
-    const key = url.pathname.slice(5); // Remove '/key/'
+    const key = url.pathname.slice(5); // Retirer '/key/'
 
     let body = '';
     req.on('data', chunk => body += chunk);
@@ -202,9 +203,9 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Route: DELETE /key/{key} - Delete key
+  // Route : DELETE /key/{clé} - Supprimer la clé
   if (req.method === 'DELETE' && url.pathname.startsWith('/key/')) {
-    const key = url.pathname.slice(5); // Remove '/key/'
+    const key = url.pathname.slice(5); // Retirer '/key/'
     const existed = store.delete(key);
 
     if (existed) {
@@ -217,7 +218,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // 404 - Not found
+  // 404 - Non trouvé
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ error: 'Not found' }));
 });
@@ -288,18 +289,19 @@ CMD ["npm", "start"]
 
 ---
 
-## Python Implementation
+## Implémentation Python
 
-### Project Structure
+### Structure du Projet
+
 ```
 store-basics-py/
 ├── requirements.txt
 ├── Dockerfile
 └── src/
-    └── store.py       # Complete store implementation
+    └── store.py       # Implémentation complète du magasin
 ```
 
-### Complete Python Code
+### Code Python Complet
 
 **store-basics-py/src/store.py**
 ```python
@@ -309,24 +311,24 @@ from typing import Any, Dict
 from urllib.parse import urlparse
 
 class KeyValueStore:
-    """Simple in-memory key-value store."""
+    """Magasin clé-valeur simple en mémoire."""
 
     def __init__(self):
         self.data: Dict[str, Any] = {}
 
     def set(self, key: str, value: Any) -> None:
-        """Store a key-value pair."""
+        """Stocker une paire clé-valeur."""
         self.data[key] = value
         print(f"[Store] SET {key} = {json.dumps(value)}")
 
     def get(self, key: str) -> Any:
-        """Get value by key."""
+        """Obtenir la valeur par clé."""
         value = self.data.get(key)
         print(f"[Store] GET {key} => {json.dumps(value) if value is not None else 'null'}")
         return value
 
     def delete(self, key: str) -> bool:
-        """Delete a key."""
+        """Supprimer une clé."""
         existed = key in self.data
         if existed:
             del self.data[key]
@@ -334,26 +336,26 @@ class KeyValueStore:
         return existed
 
     def keys(self) -> list:
-        """Get all keys."""
+        """Obtenir toutes les clés."""
         return list(self.data.keys())
 
     def stats(self) -> dict:
-        """Get store statistics."""
+        """Obtenir les statistiques du magasin."""
         return {
             'totalKeys': len(self.data),
             'keys': self.keys()
         }
 
 
-# Create the store instance
+# Créer l'instance du magasin
 store = KeyValueStore()
 
 
 class StoreHandler(BaseHTTPRequestHandler):
-    """HTTP request handler for key-value store."""
+    """Gestionnaire de requêtes HTTP pour le magasin clé-valeur."""
 
     def send_json_response(self, status: int, data: dict):
-        """Send a JSON response."""
+        """Envoyer une réponse JSON."""
         self.send_response(status)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Access-Control-Allow-Origin', '*')
@@ -361,7 +363,7 @@ class StoreHandler(BaseHTTPRequestHandler):
         self.wfile.write(json.dumps(data).encode())
 
     def do_OPTIONS(self):
-        """Handle CORS preflight requests."""
+        """Gérer les requêtes préalables CORS."""
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, PUT, DELETE, OPTIONS')
@@ -369,17 +371,17 @@ class StoreHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        """Handle GET requests."""
+        """Gérer les requêtes GET."""
         parsed = urlparse(self.path)
 
-        # GET /keys - List all keys
+        # GET /keys - Lister toutes les clés
         if parsed.path == '/keys':
             self.send_json_response(200, store.stats())
             return
 
-        # GET /key/{key} - Get value
+        # GET /key/{clé} - Obtenir la valeur
         if parsed.path.startswith('/key/'):
-            key = parsed.path[5:]  # Remove '/key/'
+            key = parsed.path[5:]  # Retirer '/key/'
             value = store.get(key)
 
             if value is not None:
@@ -392,12 +394,12 @@ class StoreHandler(BaseHTTPRequestHandler):
         self.send_json_response(404, {'error': 'Not found'})
 
     def do_PUT(self):
-        """Handle PUT requests (set value)."""
+        """Gérer les requêtes PUT (définir valeur)."""
         parsed = urlparse(self.path)
 
-        # PUT /key/{key} - Set value
+        # PUT /key/{clé} - Définir la valeur
         if parsed.path.startswith('/key/'):
-            key = parsed.path[5:]  # Remove '/key/'
+            key = parsed.path[5:]  # Retirer '/key/'
 
             content_length = int(self.headers.get('Content-Length', 0))
             body = self.rfile.read(content_length).decode('utf-8')
@@ -414,12 +416,12 @@ class StoreHandler(BaseHTTPRequestHandler):
         self.send_json_response(404, {'error': 'Not found'})
 
     def do_DELETE(self):
-        """Handle DELETE requests."""
+        """Gérer les requêtes DELETE."""
         parsed = urlparse(self.path)
 
-        # DELETE /key/{key} - Delete key
+        # DELETE /key/{clé} - Supprimer la clé
         if parsed.path.startswith('/key/'):
-            key = parsed.path[5:]  # Remove '/key/'
+            key = parsed.path[5:]  # Retirer '/key/'
             existed = store.delete(key)
 
             if existed:
@@ -432,12 +434,12 @@ class StoreHandler(BaseHTTPRequestHandler):
         self.send_json_response(404, {'error': 'Not found'})
 
     def log_message(self, format, *args):
-        """Suppress default logging."""
+        """Supprimer la journalisation par défaut."""
         pass
 
 
 def run_server(port: int = 4000):
-    """Start the HTTP server."""
+    """Démarrer le serveur HTTP."""
     server_address = ('', port)
     httpd = HTTPServer(server_address, StoreHandler)
     print(f"Key-Value Store listening on port {port}")
@@ -457,7 +459,7 @@ if __name__ == '__main__':
 
 **store-basics-py/requirements.txt**
 ```
-# No external dependencies required - uses standard library only
+# Aucune dépendance externe requise - utilise uniquement la bibliothèque standard
 ```
 
 **store-basics-py/Dockerfile**
@@ -478,9 +480,9 @@ CMD ["python", "src/store.py"]
 
 ---
 
-## Docker Compose Setup
+## Configuration Docker Compose
 
-### TypeScript Version
+### Version TypeScript
 
 **examples/02-store/ts/docker-compose.yml**
 ```yaml
@@ -497,7 +499,7 @@ services:
       - ./src:/app/src
 ```
 
-### Python Version
+### Version Python
 
 **examples/02-store/py/docker-compose.yml**
 ```yaml
@@ -516,23 +518,23 @@ services:
 
 ---
 
-## Running the Example
+## Exécution de l'Exemple
 
-### Step 1: Start the Store
+### Étape 1 : Démarrer le Magasin
 
-**TypeScript:**
+**TypeScript :**
 ```bash
 cd examples/02-store/ts
 docker-compose up --build
 ```
 
-**Python:**
+**Python :**
 ```bash
 cd examples/02-store/py
 docker-compose up --build
 ```
 
-You should see:
+Vous devriez voir :
 ```
 store    | Key-Value Store listening on port 4000
 store    |
@@ -543,87 +545,87 @@ store    |   DELETE /key/{key}    - Delete key
 store    |   GET    /keys         - List all keys
 ```
 
-### Step 2: Store Some Values
+### Étape 2 : Stocker Quelques Valeurs
 
 ```bash
-# Store a string
+# Stocker une chaîne
 curl -X PUT http://localhost:4000/key/name \
   -H "Content-Type: application/json" \
   -d '"Alice"'
 
-# Store a number
+# Stocker un nombre
 curl -X PUT http://localhost:4000/key/age \
   -H "Content-Type: application/json" \
   -d '30'
 
-# Store an object
+# Stocker un objet
 curl -X PUT http://localhost:4000/key/user:1 \
   -H "Content-Type: application/json" \
   -d '{"name": "Alice", "age": 30, "city": "NYC"}'
 
-# Store a list
+# Stocker une liste
 curl -X PUT http://localhost:4000/key/tags \
   -H "Content-Type: application/json" \
   -d '["distributed", "systems", "course"]'
 ```
 
-### Step 3: Retrieve Values
+### Étape 3 : Récupérer les Valeurs
 
 ```bash
-# Get a string
+# Obtenir une chaîne
 curl http://localhost:4000/key/name
 # Response: {"key":"name","value":"Alice"}
 
-# Get a number
+# Obtenir un nombre
 curl http://localhost:4000/key/age
 # Response: {"key":"age","value":30}
 
-# Get an object
+# Obtenir un objet
 curl http://localhost:4000/key/user:1
 # Response: {"key":"user:1","value":{"name":"Alice","age":30,"city":"NYC"}}
 
-# Get a list
+# Obtenir une liste
 curl http://localhost:4000/key/tags
 # Response: {"key":"tags","value":["distributed","systems","course"]}
 
-# Try to get non-existent key
+# Essayer d'obtenir une clé inexistante
 curl http://localhost:4000/key/nonexistent
 # Response: {"error":"Key not found","key":"nonexistent"}
 ```
 
-### Step 4: List All Keys
+### Étape 4 : Lister Toutes les Clés
 
 ```bash
 curl http://localhost:4000/keys
 # Response: {"totalKeys":4,"keys":["name","age","user:1","tags"]}
 ```
 
-### Step 5: Delete a Key
+### Étape 5 : Supprimer une Clé
 
 ```bash
-# Delete a key
+# Supprimer une clé
 curl -X DELETE http://localhost:4000/key/age
 # Response: {"success":true,"key":"age"}
 
-# Verify it's gone
+# Vérifier qu'elle a disparu
 curl http://localhost:4000/key/age
 # Response: {"error":"Key not found","key":"age"}
 
-# Check remaining keys
+# Vérifier les clés restantes
 curl http://localhost:4000/keys
 # Response: {"totalKeys":3,"keys":["name","user:1","tags"]}
 ```
 
-## System Architecture
+## Architecture du Système
 
 ```mermaid
 graph TB
-    subgraph "Single-Node Key-Value Store"
-        Client["Client Applications"]
+    subgraph "Magasin Clé-Valeur à Nœud Unique"
+        Client["Applications Clientes"]
 
-        API["HTTP API"]
+        API["API HTTP"]
 
-        Store[("In-Memory<br/>Data Store")]
+        Store[("Données en<br/>Mémoire")]
 
         Client -->|"GET/PUT/DELETE"| API
         API --> Store
@@ -632,58 +634,58 @@ graph TB
     style Store fill:#f9f,stroke:#333,stroke-width:3px
 ```
 
-## Exercises
+## Exercices
 
-### Exercise 1: Add TTL (Time-To-Live) Support
+### Exercice 1 : Ajouter le Support TTL (Time-To-Live)
 
-Modify the store to automatically expire keys after a specified time:
+Modifier le magasin pour expirer automatiquement les clés après un temps spécifié :
 
-1. Add an optional `ttl` parameter to the SET operation
-2. Track when each key should expire
-3. Return null for expired keys
-4. Implement a cleanup mechanism
+1. Ajouter un paramètre `ttl` optionnel à l'opération SET
+2. Suivre quand chaque clé devrait expirer
+3. Retourner null pour les clés expirées
+4. Implémenter un mécanisme de nettoyage
 
-**Hint:** Store metadata alongside values, or use a separate expiration map.
+**Indice :** Stocker les métadonnées alongside les valeurs, ou utiliser une carte d'expiration séparée.
 
-### Exercise 2: Add Key Patterns
+### Exercice 2 : Ajouter des Motifs de Clés
 
-Add wildcard support for key lookups:
+Ajouter le support des caractères génériques pour les recherches de clés :
 
-1. Implement `GET /keys?pattern=user:*` to list matching keys
-2. Support simple `*` wildcard matching
-3. Test with patterns like `user:*`, `*:admin`, etc.
+1. Implémenter `GET /keys?pattern=user:*` pour lister les clés correspondantes
+2. Supporter les correspondances avec caractère générique `*` simple
+3. Tester avec des motifs comme `user:*`, `*:admin`, etc.
 
-### Exercise 3: Add Data Persistence
+### Exercice 3 : Ajouter la Persistance des Données
 
-Currently data is lost when the server restarts. Add persistence:
+Actuellement les données sont perdues lorsque le serveur redémarre. Ajouter la persistance :
 
-1. Save data to a JSON file on every write
-2. Load data from file on startup
-3. Handle concurrent writes safely
+1. Sauvegarder les données dans un fichier JSON à chaque écriture
+2. Charger les données depuis le fichier au démarrage
+3. Gérer les écritures simultanées en toute sécurité
 
-## Summary
+## Résumé
 
-### Key Takeaways
+### Points Clés à Retenir
 
-1. **Key-value stores** are simple but powerful data storage systems
-2. **Basic operations**: SET, GET, DELETE
-3. **HTTP API** provides a simple interface for remote access
-4. **Single-node stores** are CA (Consistent + Available) from CAP perspective
-5. **Next steps**: Add replication for fault tolerance (Session 4)
+1. **Les magasins clé-valeur** sont des systèmes de stockage de données simples mais puissants
+2. **Opérations de base :** SET, GET, DELETE
+3. **L'API HTTP** fournit une interface simple pour l'accès à distance
+4. **Les magasins à nœud unique** sont CA (Cohérent + Disponible) selon la perspective CAP
+5. **Prochaines étapes :** Ajouter la réplication pour la tolérance aux pannes (Session 4)
 
-### Check Your Understanding
+### Vérifiez Votre Compréhension
 
-- [ ] What are the four basic operations we implemented?
-- [ ] How does our store handle requests for non-existent keys?
-- [ ] What happens to the data when the Docker container stops?
-- [ ] Why is this single-node store "CA" in CAP terms?
+- [ ] Quelles sont les quatre opérations de base que nous avons implémentées ?
+- [ ] Comment notre magasin gère-t-il les requêtes pour les clés inexistantes ?
+- [ ] Qu'arrive-t-il aux données lorsque le conteneur Docker s'arrête ?
+- [ ] Pourquoi ce magasin à nœud unique est-il "CA" selon les termes CAP ?
 
-## 🧠 Chapter Quiz
+## 🧠 Quiz du Chapitre
 
-Test your mastery of these concepts! These questions will challenge your understanding and reveal any gaps in your knowledge.
+Testez votre maîtrise de ces concepts ! Ces questions mettront au défi votre compréhension et révéleront toute lacune dans vos connaissances.
 
 {{#quiz ../../quizzes/data-store-basics.toml}}
 
-## What's Next
+## Et Ensuite
 
-Our simple store works, but what happens when the node fails? Let's add replication: [Replication](../data-store/04-replication.md) (Session 4)
+Notre simple magasin fonctionne, mais qu'arrive-t-il lorsqu'un nœud échoue ? Ajoutons la réplication : [Réplication](../data-store/04-replication.md) (Session 4)

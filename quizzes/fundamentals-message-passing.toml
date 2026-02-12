@@ -1,14 +1,15 @@
 [[questions]]
 type = "MultipleChoice"
-prompt.prompt = "What's the key difference between synchronous and asynchronous messaging?"
-prompt.distractors = ["Sync is faster", "Async blocks the caller", "Sync waits for response; async continues immediately"]
-answer.answer = "Sync waits for response; async continues immediately"
-context = "Synchronous messaging blocks until a response arrives. Asynchronous messaging sends and continues without waiting—better throughput but more complex error handling."
+prompt.prompt = "Quelle est la différence clé entre la messagerie synchrone et asynchrone ?"
+prompt.distractors = ["Sync est plus rapide", "Async bloque l'appelant", "Sync attend la réponse ; async continue immédiatement"]
+answer.answer = "Sync attend la réponse ; async continue immédiatement"
+context = "La messagerie synchrone bloque jusqu'à ce qu'une réponse arrive. La messagerie asynchrone envoie et continue sans attendre — meilleur débit mais gestion des erreurs plus complexe."
 id = "77507da6-6e8c-4d55-94b4-0e1f5608a2bd"
 
 [[questions]]
 type = "ShortAnswer"
-prompt.prompt = "What delivery guarantee means 'message may be lost, never duplicated'?"
-answer.answer = "at-most-once"
-context = "At-most-once means messages may be lost but will never be duplicated. Good for logging and metrics where losing data is acceptable."
+prompt.prompt = "Quelle garantie de livraison signifie 'le message peut être perdu, jamais dupliqué' ?"
+answer.answer = "au-plus-une-fois"
+answer.alternatives = ["at-most-once", "at most once"]
+context = "Au-plus-une-fois signifie que les messages peuvent être perdus mais ne seront jamais dupliqués. Convient pour la journalisation et les métriques où la perte de données est acceptable."
 id = "b51b5f1c-ed2c-49fd-8f55-b79716b3beb2"

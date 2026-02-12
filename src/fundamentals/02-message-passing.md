@@ -1,136 +1,136 @@
-# Message Passing
+# Passage de Messages
 
-> **Session 1, Part 2** - 25 minutes
+> **Session 1, Partie 2** - 25 minutes
 
-## Learning Objectives
+## Objectifs d'Apprentissage
 
-- [ ] Understand message passing as a fundamental pattern in distributed systems
-- [ ] Distinguish between synchronous and asynchronous messaging
-- [ ] Learn different message delivery guarantees
-- [ ] Implement basic message passing in TypeScript and Python
+- [ ] Comprendre le passage de messages comme modèle fondamental dans les systèmes distribués
+- [ ] Distinguer entre la messagerie synchrone et asynchrone
+- [ ] Apprendre les différentes garanties de livraison de messages
+- [ ] Implémenter le passage de messages de base en TypeScript et Python
 
-## What is Message Passing?
+## Qu'est-ce que le Passage de Messages ?
 
-In distributed systems, **message passing** is how nodes communicate. Instead of shared memory or direct function calls, components send messages to each other over the network.
+Dans les systèmes distribués, le **passage de messages (message passing)** est la façon dont les nœuds communiquent. Au lieu de la mémoire partagée ou des appels de fonction directs, les composants s'envoient des messages sur le réseau.
 
 ```mermaid
 graph LR
-    A[Node A]
-    B[Node B]
+    A[Nœud A]
+    B[Nœud B]
     M[Message]
 
-    A -->|send| M
-    M -->|network| B
-    B -->|process| M
+    A -->|envoyer| M
+    M -->|réseau| B
+    B -->|traiter| M
 ```
 
-### Key Insight
+### Idée Clé
 
-> "In distributed systems, communication is not a function call—it's a request sent over an unreliable network."
+> "Dans les systèmes distribués, la communication n'est pas un appel de fonction — c'est une requête envoyée sur un réseau non fiable."
 
-This simple fact has profound implications for everything we build.
+Ce simple fait a des implications profondes sur tout ce que nous construisons.
 
-## Synchronous vs Asynchronous
+## Synchrone vs Asynchrone
 
-### Synchronous Messaging (Request-Response)
+### Messagerie Synchrone (Requête-Réponse)
 
-The sender waits for a response before continuing.
+L'expéditeur attend une réponse avant de continuer.
 
 ```mermaid
 sequenceDiagram
     participant C as Client
-    participant S as Server
+    participant S as Serveur
 
-    C->>S: Request
-    Note over C: Waiting...
-    S-->>C: Response
-    Note over C: Continue
+    C->>S: Requête
+    Note over C: En attente...
+    S-->>C: Réponse
+    Note over C: Continuer
 ```
 
-**Characteristics:**
-- Simple to understand and implement
-- Caller is blocked during the call
-- Easier error handling (immediate feedback)
-- Can lead to poor performance and cascading failures
+**Caractéristiques :**
+- Simple à comprendre et à implémenter
+- L'appelant est bloqué pendant l'appel
+- Gestion des erreurs plus facile (retour immédiat)
+- Peut entraîner de mauvaises performances et des défaillances en cascade
 
-### Asynchronous Messaging (Fire-and-Forget)
+### Messagerie Asynchrone (Fire-and-Forget)
 
-The sender continues without waiting for a response.
+L'expéditeur continue sans attendre de réponse.
 
 ```mermaid
 sequenceDiagram
-    participant P as Producer
-    participant Q as Queue
+    participant P as Producteur
+    participant Q as File
     participant W as Worker
 
-    P->>Q: Send Message
-    Note over P: Continue immediately
+    P->>Q: Envoyer Message
+    Note over P: Continuer immédiatement
 
-    Q->>W: Process Later
-    Note over W: Working...
-    W-->>P: Result (optional)
+    Q->>W: Traiter Plus Tard
+    Note over W: Travail en cours...
+    W-->>P: Résultat (optionnel)
 ```
 
-**Characteristics:**
-- Non-blocking, better throughput
-- More complex error handling
-- Requires correlation IDs to track requests
-- Enables loose coupling between components
+**Caractéristiques :**
+- Non bloquant, meilleur débit
+- Gestion des erreurs plus complexe
+- Nécessite des ID de corrélation pour suivre les requêtes
+- Permet un couplage souple entre les composants
 
-## Message Delivery Guarantees
+## Garanties de Livraison des Messages
 
-### Three Delivery Semantics
+### Trois Sémantiques de Livraison
 
 ```mermaid
 graph TB
-    subgraph "At Most Once"
-        A1[Send] --> A2[May be lost]
-        A2 --> A3[Never duplicated]
+    subgraph "Au Plus Une Fois"
+        A1[Envoyer] --> A2[Peut être perdu]
+        A2 --> A3[Jamais dupliqué]
     end
 
-    subgraph "At Least Once"
-        B1[Send] --> B2[Retries until ack]
-        B2 --> B3[May be duplicated]
+    subgraph "Au Moins Une Fois"
+        B1[Envoyer] --> B2[Réessayer jusqu'à accusé]
+        B2 --> B3[Peut être dupliqué]
     end
 
-    subgraph "Exactly Once"
-        C1[Send] --> C2[Deduplication]
-        C2 --> C3[Perfect delivery]
+    subgraph "Exactement Une Fois"
+        C1[Envoyer] --> C2[Déduplication]
+        C2 --> C3[Livraison parfaite]
     end
 ```
 
-### Comparison
+### Comparaison
 
-| Guarantee | Description | Cost | Use Case |
+| Garantie | Description | Coût | Cas d'Usage |
 |-----------|-------------|------|----------|
-| **At Most Once** | Message may be lost, never duplicated | Lowest | Logging, metrics, non-critical data |
-| **At Least Once** | Message guaranteed to arrive, may duplicate | Medium | Notifications, job queues |
-| **Exactly Once** | Perfect delivery, no duplicates | Highest | Financial transactions, payments |
+| **Au Plus Une Fois** | Le message peut être perdu, jamais dupliqué | Le plus bas | Journaux, métriques, données non critiques |
+| **Au Moins Une Fois** | Le message garanti d'arriver, peut être dupliqué | Moyen | Notifications, files de tâches |
+| **Exactement Une Fois** | Livraison parfaite, pas de doublons | Le plus élevé | Transactions financières, paiements |
 
-### The Two Generals Problem
+### Le Problème des Deux Généraux
 
-A classic proof that **perfect** communication is impossible in unreliable networks:
+Une preuve classique que la communication **parfaite** est impossible dans les réseaux non fiables :
 
 ```mermaid
 graph LR
-    A[General A<br/>City 1]
-    B[General B<br/>City 2]
+    A[Général A<br/>Ville 1]
+    B[Général B<br/>Ville 2]
 
-    A -->|"Attack at 8pm?"| B
-    B -->|"Ack: received"| A
-    A -->|"Ack: received your ack"| B
-    B -->|"Ack: received your ack of ack"| A
+    A -->|"Attaque à 20h ?"| B
+    B -->|"Acc : reçu"| A
+    A -->|"Acc : accusé reçu"| B
+    B -->|"Acc : accusé de l'accusé reçu"| A
 
-    Note[A: infinite messages needed]
+    Note[A : messages infinis nécessaires]
 ```
 
-**Implication:** You can never be 100% certain a message was received without infinite acknowledgments.
+**Implication :** Vous ne pouvez jamais être certain à 100 % qu'un message a été reçu sans accusés infinis.
 
-In practice, we accept uncertainty and design systems that tolerate it.
+En pratique, nous acceptons l'incertitude et concevons des systèmes qui la tolèrent.
 
-## Architecture Patterns
+## Modèles d'Architecture
 
-### Direct Communication
+### Communication Directe
 
 ```mermaid
 graph LR
@@ -140,31 +140,31 @@ graph LR
     C --> D
 ```
 
-- Simple, straightforward
-- Tight coupling
-- Difficult to scale independently
+- Simple, direct
+- Couplage fort
+- Difficile à faire évoluer indépendamment
 
-### Message Queue (Indirect Communication)
+### File de Messages (Communication Indirecte)
 
 ```mermaid
 graph TB
-    P[Producer 1] --> Q[Message Queue]
-    P2[Producer 2] --> Q
-    P3[Producer N] --> Q
+    P[Producteur 1] --> Q[File de Messages]
+    P2[Producteur 2] --> Q
+    P3[Producteur N] --> Q
 
     Q --> W1[Worker 1]
     Q --> W2[Worker 2]
     Q --> W3[Worker N]
 ```
 
-- Loose coupling
-- Easy to scale
-- Buffers requests during traffic spikes
-- Enables retry and error handling
+- Couplage souple
+- Facile à faire évoluer
+- Met en tampon les requêtes pendant les pics de trafic
+- Permet les nouvelles tentatives et la gestion des erreurs
 
-## Implementation Examples
+## Exemples d'Implémentation
 
-### TypeScript: HTTP (Synchronous)
+### TypeScript : HTTP (Synchrone)
 
 ```typescript
 // server.ts
@@ -178,7 +178,7 @@ const server = http.createServer((req, res) => {
       const message = JSON.parse(body);
       console.log('Received:', message);
 
-      // Send response back (synchronous)
+      // Renvoyer la réponse (synchrone)
       res.writeHead(200);
       res.end(JSON.stringify({ status: 'processed', id: message.id }));
     });
@@ -214,12 +214,12 @@ function sendMessage(data: any): Promise<any> {
   });
 }
 
-// Usage: waits for response
+// Usage : attend la réponse
 sendMessage({ id: '1', content: 'Hello' })
   .then(response => console.log('Got:', response));
 ```
 
-### Python: HTTP (Synchronous)
+### Python : HTTP (Synchrone)
 
 ```python
 # server.py
@@ -235,7 +235,7 @@ class MessageHandler(BaseHTTPRequestHandler):
 
             print(f"Received: {message}")
 
-            # Send response back (synchronous)
+            # Renvoyer la réponse (synchrone)
             response = json.dumps({'status': 'processed', 'id': message['id']})
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
@@ -251,7 +251,7 @@ import requests
 import json
 
 def send_message(data):
-    # Synchronous: waits for response
+    # Synchrone : attend la réponse
     response = requests.post(
         'http://localhost:3000/message',
         json=data
@@ -263,7 +263,7 @@ result = send_message({'id': '1', 'content': 'Hello'})
 print(f"Got: {result}")
 ```
 
-### TypeScript: Simple Queue (Asynchronous)
+### TypeScript : File Simple (Asynchrone)
 
 ```typescript
 // queue.ts
@@ -287,7 +287,7 @@ class MessageQueue {
     this.messages.push(message);
     console.log(`Published to ${topic}:`, message.id);
 
-    // Fire and forget - don't wait for processing
+    // Fire and forget - ne pas attendre le traitement
     setImmediate(() => this.process(topic, message));
 
     return message.id;
@@ -300,7 +300,7 @@ class MessageQueue {
   private process(topic: string, message: Message) {
     const handler = this.handlers.get(topic);
     if (handler) {
-      // Handle asynchronously - caller doesn't wait
+      // Traiter de manière asynchrone - l'appelant n'attend pas
       handler(message);
     }
   }
@@ -311,16 +311,16 @@ const queue = new MessageQueue();
 
 queue.subscribe('tasks', (msg) => {
   console.log(`Processing task ${msg.id}:`, msg.data);
-  // Simulate async work
+  // Simuler un travail asynchrone
   setTimeout(() => console.log(`Task ${msg.id} complete`), 1000);
 });
 
-// Publish returns immediately - doesn't wait for processing
+// Publish retourne immédiatement - n'attend pas le traitement
 const taskId = queue.publish('tasks', { type: 'email', to: 'user@example.com' });
 console.log(`Task ${taskId} queued (not yet processed)`);
 ```
 
-### Python: Simple Queue (Asynchronous)
+### Python : File Simple (Asynchrone)
 
 ```python
 # queue.py
@@ -354,7 +354,7 @@ class MessageQueue:
 
         print(f"Published to {topic}: {message.id}")
 
-        # Fire and forget - don't wait for processing
+        # Fire and forget - ne pas attendre le traitement
         threading.Thread(
             target=self._process,
             args=(topic, message),
@@ -369,7 +369,7 @@ class MessageQueue:
     def _process(self, topic: str, message: Message):
         handler = self.handlers.get(topic)
         if handler:
-            # Handle asynchronously - caller doesn't wait
+            # Traiter de manière asynchrone - l'appelant n'attend pas
             handler(message)
 
 # Usage
@@ -377,61 +377,61 @@ queue = MessageQueue()
 
 def handle_task(msg: Message):
     print(f"Processing task {msg.id}: {msg.data}")
-    # Simulate async work
+    # Simuler un travail asynchrone
     time.sleep(1)
     print(f"Task {msg.id} complete")
 
 queue.subscribe('tasks', handle_task)
 
-# Publish returns immediately - doesn't wait for processing
+# Publish retourne immédiatement - n'attend pas le traitement
 task_id = queue.publish('tasks', {'type': 'email', 'to': 'user@example.com'})
 print(f"Task {task_id} queued (not yet processed)")
 
-# Keep main thread alive to see processing
+# Garder le thread principal en vie pour voir le traitement
 time.sleep(2)
 ```
 
-## Common Message Patterns
+## Modèles de Messages Courants
 
-### Request-Response
+### Requête-Réponse
 ```typescript
-// Call and wait for answer
+// Appeler et attendre la réponse
 const answer = await ask(question);
 ```
 
 ### Fire-and-Forget
 ```typescript
-// Send and continue
+// Envoyer et continuer
 notify(user);
 ```
 
-### Publish-Subscribe
+### Publier-S'Abonner
 ```typescript
-// Many receivers, one sender
+// Plusieurs récepteurs, un expéditeur
 broker.publish('events', data);
 ```
 
-### Request-Reply (Correlation)
+### Requête-Réponse (avec Corrélation)
 ```typescript
-// Send request, get reply later
+// Envoyer la requête, obtenir la réponse plus tard
 const replyTo = createReplyQueue();
 broker.send(request, { replyTo });
-// ... later
+// ... plus tard
 const reply = await replyTo.receive();
 ```
 
-## Error Handling
+## Gestion des Erreurs
 
-Message passing over networks is unreliable. Common issues:
+Le passage de messages sur les réseaux n'est pas fiable. Problèmes courants :
 
-| Error | Cause | Handling Strategy |
+| Erreur | Cause | Stratégie de Gestion |
 |-------|-------|-------------------|
-| **Timeout** | No response, network slow | Retry with backoff |
-| **Connection Refused** | Service down | Circuit breaker, queue for later |
-| **Message Lost** | Network failure | Acknowledgments, retries |
-| **Duplicate** | Retry after slow ack | Idempotent operations |
+| **Délai d'attente** | Pas de réponse, réseau lent | Réessayer avec attente progressive |
+| **Connexion Refusée** | Service indisponible | Disjoncteur, mettre en file pour plus tard |
+| **Message Perdu** | Défaillance du réseau | Accusés de réception, nouvelles tentatives |
+| **Duplication** | Nouvelle tentative après accusé lent | Opérations idempotentes |
 
-### Retry Pattern
+### Modèle de Nouvelle Tentative
 
 ```typescript
 async function sendMessageWithRetry(
@@ -444,7 +444,7 @@ async function sendMessageWithRetry(
     } catch (error) {
       if (attempt === maxRetries) throw error;
 
-      // Exponential backoff: 100ms, 200ms, 400ms
+      // Attente exponentielle : 100ms, 200ms, 400ms
       const delay = 100 * Math.pow(2, attempt - 1);
       await new Promise(r => setTimeout(r, delay));
       console.log(`Retry ${attempt}/${maxRetries}`);
@@ -453,28 +453,28 @@ async function sendMessageWithRetry(
 }
 ```
 
-## Summary
+## Résumé
 
-### Key Takeaways
+### Points Clés à Retenir
 
-1. **Message passing** is how distributed systems communicate
-2. **Synchronous** = wait for response; **Asynchronous** = fire and forget
-3. **Delivery guarantees**: at-most-once, at-least-once, exactly-once
-4. **Network is unreliable** - design for failures and retries
-5. **Choose the right pattern** for your use case
+1. **Passage de messages** = comment les systèmes distribués communiquent
+2. **Synchrone** = attendre la réponse ; **Asynchrone** = fire and forget
+3. **Garanties de livraison** : au-plus-une-fois, au-moins-une-fois, exactement-une-fois
+4. **Le réseau n'est pas fiable** - concevez pour les défaillances et les nouvelles tentatives
+5. **Choisissez le bon modèle** pour votre cas d'usage
 
-### Check Your Understanding
+### Vérifiez Votre Compréhension
 
-- [ ] When would you use synchronous vs asynchronous messaging?
-- [ ] What's the difference between at-least-once and exactly-once?
-- [ ] Why is perfect communication impossible in distributed systems?
+- [ ] Quand utiliseriez-vous la messagerie synchrone vs asynchrone ?
+- [ ] Quelle est la différence entre au-moins-une-fois et exactement-une-fois ?
+- [ ] Pourquoi la communication parfaite est-elle impossible dans les systèmes distribués ?
 
-## 🧠 Chapter Quiz
+## 🧠 Quiz du Chapitre
 
-Test your mastery of these concepts! These questions will challenge your understanding and reveal any gaps in your knowledge.
+Testez votre maîtrise de ces concepts ! Ces questions mettront au défi votre compréhension et révéleront les lacunes dans vos connaissances.
 
 {{#quiz ../../quizzes/fundamentals-message-passing.toml}}
 
-## What's Next
+## Suite
 
-Now let's apply message passing to build our first distributed system: [Queue System Implementation](./03-queue-system.md)
+Appliquons maintenant le passage de messages pour construire notre premier système distribué : [Implémentation du Système de File](./03-queue-system.md)

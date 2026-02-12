@@ -1,14 +1,15 @@
 [[questions]]
 type = "MultipleChoice"
-prompt.prompt = "What do sequence numbers ensure in a chat system?"
-prompt.distractors = ["Faster delivery", "Message ordering", "Encryption"]
-answer.answer = "Message ordering"
-context = "Sequence numbers impose order—users see messages in the order they were sent. Timestamps don't work due to clock skew across servers."
+prompt.prompt = "Que garantissent les numéros de séquence dans un système de chat ?"
+prompt.distractors = ["Livraison plus rapide", "Ordonnancement des messages", "Chiffrement"]
+answer.answer = "Ordonnancement des messages"
+context = "Les numéros de séquence imposent l'ordre — les utilisateurs voient les messages dans l'ordre où ils ont été envoyés. Les horodatages ne fonctionnent pas en raison de la dérive d'horloge entre les serveurs."
 id = "ec18516a-7b1e-459d-a377-24ef048f91ab"
 
 [[questions]]
 type = "ShortAnswer"
-prompt.prompt = "How do you route messages to only users in a specific chat room efficiently?"
-answer.answer = "room map"
-context = "Maintain a map of roomId to connected WebSocket connections. Broadcast only to connections in that room—no wasted bandwidth."
+prompt.prompt = "Comment acheminer efficacement les messages uniquement aux utilisateurs dans une salle de chat spécifique ?"
+answer.answer = "carte de salle"
+answer.alternatives = ["room map", "map de salle", "table de salle"]
+context = "Maintenir une carte de roomId vers les connexions WebSocket connectées. Diffuser uniquement aux connexions dans cette salle — pas de bande passante gaspillée."
 id = "cbced47a-eabb-4e3d-a677-13f4f294d516"

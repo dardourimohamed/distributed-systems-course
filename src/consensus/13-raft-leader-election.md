@@ -1,211 +1,212 @@
-# Raft Leader Election
+# Élection de Leader Raft
 
-> **Session 9, Part 1** - 45 minutes
+> **Session 9, Partie 1** - 45 minutes
 
-## Learning Objectives
+## Objectifs d'Apprentissage
 
-- [ ] Understand how Raft elects a leader democratically
-- [ ] Implement the RequestVote RPC
-- [ ] Handle election timeouts and randomized intervals
-- [ ] Prevent split votes with election safety
-- [ ] Build a working leader election system
+- [ ] Comprendre comment Raft élit un leader démocratiquement
+- [ ] Implémenter le RPC RequestVote
+- [ ] Gérer les délais d'élection et les intervalles randomisés
+- [ ] Empêcher les votes partagés avec la sécurité d'élection
+- [ ] Construire un système d'élection de leader fonctionnel
 
 ---
 
-## Concept: Democratic Leader Election
+## Concept : Élection Démocratique de Leader
 
-In the previous chapter, we learned about Raft's design philosophy. Now let's dive into the **leader election** mechanism — the democratic process by which nodes agree on who should lead.
+Dans le chapitre précédent, nous avons appris la philosophie de conception de Raft. Maintenant, plongeons dans le mécanisme d'**élection de leader** — le processus démocratique par lequel les nœuds s'accordent sur qui doit diriger.
 
-### Why Do We Need a Leader?
+### Pourquoi avons-nous besoin d'un Leader ?
 
 ```
-Without a Leader:
+Sans Leader :
 ┌─────────┐     ┌─────────┐     ┌─────────┐
-│ Node A  │     │ Node B  │     │ Node C  │
+│ Nœud A  │     │ Nœud B  │     │ Nœud C  │
 │         │     │         │     │         │
-│ "I'm    │     │ "No,    │     │ "Both   │
-│ leader!" │     │ I am!"  │     │ wrong!" │
+│ "Je     │     │ "Non,   │     │ "Les    │
+│ suis    │     │ moi !   │     │ deux    │
+│ leader!" │     │         │     │ tort !" │
 └─────────┘     └─────────┘     └─────────┘
-     Chaos!        Split brain!   Confusion!
+     Chaos !      Split brain !   Confusion !
 
-With Raft Leader Election:
+Avec Élection de Leader Raft :
 ┌─────────┐     ┌─────────┐     ┌─────────┐
-│ Node A  │     │ Node B  │     │ Node C  │
+│ Nœud A  │     │ Nœud B  │     │ Nœud C  │
 │         │     │         │     │         │
-│ "I      │     │ "I      │     │ "I vote │
-│ vote    │---> │ vote    │---> │ for     │
-│ for B"   │     │ for B"   │     │ B"      │
+│ "Je     │     │ "Je     │     │ "Je vote │
+│ vote    │---> │ vote    │---> │ pour    │
+│ pour B"  │     │ pour B"  │     │ B"      │
 └────┬────┘     └────┬────┘     └────┬────┘
      │               │               │
      └───────────────┴───────────────┘
                      │
                      ▼
               ┌──────────┐
-              │ Node B   │
+              │ Nœud B   │
               │ = LEADER │
               └──────────┘
 ```
 
-**Key Insight**: Nodes vote for each other. The node with **majority votes** becomes leader.
+**Aperçu Clé** : Les nœuds votent les uns pour les autres. Le nœud avec **la majorité des votes** devient leader.
 
 ---
 
-## State Transitions During Election
+## Transitions d'États Pendant l'Élection
 
-Raft nodes cycle through three states during leader election:
+Les nœuds Raft passent par trois états pendant l'élection de leader :
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Follower: Start
+    [*] --> Suiveur: Démarrage
 
-    Follower --> Candidate: Election timeout
-    Follower --> Follower: Receive valid AppendEntries
-    Follower --> Follower: Discover higher term
+    Suiveur --> Candidat: Délai d'élection
+    Suiveur --> Suiveur: Recevoir AppendEntries valide
+    Suiveur --> Suiveur: Découvrir un terme supérieur
 
-    Candidate --> Leader: Receive majority votes
-    Candidate --> Candidate: Split vote (timeout)
-    Candidate --> Follower: Discover higher term
-    Candidate --> Follower: Receive valid AppendEntries
+    Candidat --> Leader: Recevoir la majorité des votes
+    Candidat --> Candidat: Vote partagé (délai)
+    Candidat --> Suiveur: Découvrir un terme supérieur
+    Candidat --> Suiveur: Recevoir AppendEntries valide
 
-    Leader --> Follower: Discover higher term
+    Leader --> Suiveur: Découvrir un terme supérieur
 
-    note right of Follower
-        - Votes for at most one candidate per term
-        - Resets election timeout on heartbeat
+    note right of Suiveur
+        - Vote pour au plus un candidat par terme
+        - Réinitialise le délai d'élection sur battement de cœur
     end note
 
-    note right of Candidate
-        - Increments current term
-        - Votes for self
-        - Sends RequestVote to all nodes
-        - Randomized timeout prevents deadlock
+    note right of Candidat
+        - Incrémente le terme actuel
+        - Vote pour lui-même
+        - Envoie RequestVote à tous les nœuds
+        - Le délai randomisé empêche l'interblocage
     end note
 
     note right of Leader
-        - Sends heartbeats (empty AppendEntries)
-        - Handles client requests
-        - Replicates log entries
+        - Envoie des battements de cœur (AppendEntries vides)
+        - Gère les demandes clientes
+        - Réplique les entrées de journal
     end note
 ```
 
 ---
 
-## The Election Algorithm Step by Step
+## L'Algorithme d'Élection Étape par Étape
 
-### Step 1: Follower Timeout
+### Étape 1 : Délai du Suiveur
 
-When a follower doesn't hear from a leader within the **election timeout**:
+Lorsqu'un suiveur n'entend pas le leader dans le **délai d'élection** :
 
 ```
-Time ────────────────────────────────────────────────────────>
+Temps ────────────────────────────────────────────────────────>
 
-Node A: [waiting...] [waiting...] ⏱️ TIMEOUT! → Become Candidate
-Node B: [waiting...] [waiting...] [waiting...]
-Node C: [waiting...] [waiting...] [waiting...]
+Nœud A : [en attente...] [en attente...] ⏱️ DÉLAI ! → Devenir Candidat
+Nœud B : [en attente...] [en attente...] [en attente...]
+Nœud C : [en attente...] [en attente...] [en attente...]
 ```
 
-### Step 2: Become Candidate
+### Étape 2 : Devenir Candidat
 
-The node transitions to candidate state:
+Le nœud passe à l'état de candidat :
 
 ```mermaid
 sequenceDiagram
-    participant C as Candidate (Node A)
-    participant A as All Nodes
+    participant C as Candidat (Nœud A)
+    participant A as Tous les Nœuds
 
-    C->>C: Increment term (e.g., term = 4)
-    C->>C: Vote for self
-    C->>A: Send RequestVote(term=4) to all
+    C->>C: Incrémenter le terme (ex: terme = 4)
+    C->>C: Voter pour soi-même
+    C->>A: Envoyer RequestVote(terme=4) à tous
 
-    Note over C: Wait for votes...
+    Note over C: Attendre les votes...
 
-    par Each follower processes RequestVote
-        A->>A: If term < currentTerm: reject
-        A->>A: If votedFor != null: reject
-        A->>A: If candidate log is up-to-date: grant vote
+    par Chaque suiveur traite RequestVote
+        A->>A: Si terme < termeActuel : rejeter
+        A->>A: Si votéPour != null : rejeter
+        A->>A: Si le journal du candidat est à jour : accorder le vote
     end
 
-    A-->>C: Send vote response
+    A-->>C: Envoyer la réponse de vote
 
-    alt Majority votes received
-        C->>C: Become LEADER
-    else Split vote
-        C->>C: Wait for timeout, then retry
+    alt Majorité de votes reçue
+        C->>C: Devenir LEADER
+    else Vote partagé
+        C->>C: Attendre le délai, puis réessayer
     end
 ```
 
-### Step 3: RequestVote RPC
+### Étape 3 : RPC RequestVote
 
-The `RequestVote` RPC is the ballot paper in Raft's election:
+Le `RequestVote` RPC est le bulletin de vote dans l'élection de Raft :
 
 ```mermaid
 graph LR
     subgraph RequestVote RPC
-        C[term] --> D["Candidate's term"]
-        E[candidateId] --> F["Node requesting vote"]
-        G[lastLogIndex] --> H["Index of candidate's last log entry"]
-        I[lastLogTerm] --> J["Term of candidate's last log entry"]
+        C[term] --> D["Terme du candidat"]
+        E[candidateId] --> F["Nœud demandant le vote"]
+        G[lastLogIndex] --> H["Index de la dernière entrée de journal du candidat"]
+        I[lastLogTerm] --> J["Terme de la dernière entrée de journal du candidat"]
     end
 
-    subgraph Response
-        K[term] --> L["Current term (for candidate to update)"]
-        M[voteGranted] --> N["true if follower voted"]
+    subgraph Réponse
+        K[term] --> L["Terme actuel (pour que le candidat mette à jour)"]
+        M[voteGranted] --> N["vrai si le suiveur a voté"]
     end
 ```
 
-**Voting Rule**: A follower grants vote if:
-1. Candidate's term > follower's currentTerm, OR
-2. Terms equal AND follower hasn't voted yet AND candidate's log is at least as up-to-date
+**Règle de Vote** : Un suiveur accorde le vote si :
+1. Le terme du candidat > termeActuel du suiveur, OU
+2. Les termes sont égaux ET le suiveur n'a pas encore voté ET le journal du candidat est au moins à jour
 
 ---
 
-## Randomized Election Timeouts
+## Délais d'Élection Randomisés
 
-### The Split Vote Problem
+### Le Problème du Vote Partagé
 
-Without randomization, simultaneous elections cause deadlocks:
+Sans randomisation, les élections simultanées causent des interblocages :
 
 ```
-Bad: Fixed timeouts cause repeated split votes
-Node A: timeout at T=100 → Candidate, gets 1 vote
-Node B: timeout at T=100 → Candidate, gets 1 vote
-Node C: timeout at T=100 → Candidate, gets 1 vote
+Mauvais : Les délais fixes causent des votes partagés répétés
+Nœud A : délai à T=100 → Candidat, obtient 1 vote
+Nœud B : délai à T=100 → Candidat, obtient 1 vote
+Nœud C : délai à T=100 → Candidat, obtient 1 vote
 
-Result: Nobody wins! Election timeout...
-Same thing repeats forever!
+Résultat : Personne ne gagne ! Délai d'élection...
+La même chose se répète pour toujours !
 ```
 
-### Solution: Randomized Intervals
+### Solution : Intervalles Randomisés
 
-Each node picks a random timeout within a range:
+Chaque nœud choisit un délai aléatoire dans une plage :
 
 ```mermaid
 gantt
-    title Election Timeouts (Randomized: 150-300ms)
+    title Délais d'Élection (Randomisés : 150-300ms)
     dateFormat X
     axisFormat %L
 
-    Node A :a1, 0, 180
-    Node B :b1, 0, 220
-    Node C :c1, 0, 160
+    Nœud A :a1, 0, 180
+    Nœud B :b1, 0, 220
+    Nœud C :c1, 0, 160
 
-    Node A becomes Candidate :milestone, m1, 180, 0s
-    Node C becomes Candidate :milestone, m2, 160, 0s
+    Nœud A devient Candidat :milestone, m1, 180, 0s
+    Nœud C devient Candidat :milestone, m2, 160, 0s
 ```
 
-**Node C times out first** and starts election. Node A and B reset their timeouts when they receive `RequestVote`, allowing Node C to gather votes.
+**Le Nœud C atteint le délai en premier** et commence l'élection. Les Nœuds A et B réinitialisent leurs délais lorsqu'ils reçoivent `RequestVote`, permettant au Nœud C de rassembler les votes.
 
-**Probability Analysis**: For a cluster of N nodes with timeout range [T, 2T]:
-- Probability of simultaneous timeout: ~1/N
-- With 5 nodes and 150-300ms range: P < 5%
+**Analyse de Probabilité** : Pour un cluster de N nœuds avec une plage de délai [T, 2T] :
+- Probabilité de délai simultané : ~1/N
+- Avec 5 nœuds et une plage de 150-300ms : P < 5%
 
 ---
 
-## TypeScript Implementation
+## Implémentation TypeScript
 
-Let's build a working Raft leader election system:
+Construisons un système d'élection de leader Raft fonctionnel :
 
-### Core Types
+### Types Fondamentaux
 
 ```typescript
 // types/raft.ts
@@ -220,9 +221,9 @@ export interface LogEntry {
 
 export interface RaftNodeConfig {
   id: string;
-  peers: string[];  // List of peer node IDs
-  electionTimeoutMin: number;  // Minimum timeout in ms
-  electionTimeoutMax: number;  // Maximum timeout in ms
+  peers: string[];  // Liste des IDs de nœuds pairs
+  electionTimeoutMin: number;  // Délai minimum en ms
+  electionTimeoutMax: number;  // Délai maximum en ms
 }
 
 export interface RequestVoteArgs {
@@ -252,7 +253,7 @@ export interface AppendEntriesReply {
 }
 ```
 
-### Raft Node Implementation
+### Implémentation du Nœud Raft
 
 ```typescript
 // raft-node.ts
@@ -265,18 +266,18 @@ export class RaftNode {
   private votedFor: string | null = null;
   private log: LogEntry[] = [];
 
-  // Election timeout
+  // Délai d'élection
   private electionTimer: NodeJS.Timeout | null = null;
   private lastHeartbeat: number = Date.now();
 
-  // Leader-only state
+  // État uniquement pour le leader
   private leaderId: string | null = null;
 
   constructor(private config: RaftNodeConfig) {
     this.startElectionTimer();
   }
 
-  // ========== Public API ==========
+  // ========== API Publique ==========
 
   getState(): NodeState {
     return this.state;
@@ -290,10 +291,10 @@ export class RaftNode {
     return this.leaderId;
   }
 
-  // ========== RPC Handlers ==========
+  // ========== Gestionnaires RPC ==========
 
   /**
-   * Invoked by candidates to gather votes
+   * Invoqué par les candidats pour rassembler les votes
    */
   requestVote(args: RequestVoteArgs): RequestVoteReply {
     const reply: RequestVoteReply = {
@@ -301,23 +302,23 @@ export class RaftNode {
       voteGranted: false
     };
 
-    // Rule 1: If candidate's term is lower, reject
+    // Règle 1 : Si le terme du candidat est inférieur, rejeter
     if (args.term < this.currentTerm) {
       return reply;
     }
 
-    // Rule 2: If candidate's term is higher, update and become follower
+    // Règle 2 : Si le terme du candidat est supérieur, mettre à jour et devenir suiveur
     if (args.term > this.currentTerm) {
       this.becomeFollower(args.term);
       reply.term = args.term;
     }
 
-    // Rule 3: If we already voted for someone else this term, reject
+    // Règle 3 : Si nous avons déjà voté pour quelqu'un d'autre ce terme, rejeter
     if (this.votedFor !== null && this.votedFor !== args.candidateId) {
       return reply;
     }
 
-    // Rule 4: Check if candidate's log is at least as up-to-date as ours
+    // Règle 4 : Vérifier si le journal du candidat est au moins à jour que le nôtre
     const lastEntry = this.log.length > 0 ? this.log[this.log.length - 1] : null;
     const lastLogIndex = lastEntry ? lastEntry.index : 0;
     const lastLogTerm = lastEntry ? lastEntry.term : 0;
@@ -330,17 +331,17 @@ export class RaftNode {
       return reply;
     }
 
-    // Grant vote
+    // Accorder le vote
     this.votedFor = args.candidateId;
     reply.voteGranted = true;
     this.resetElectionTimer();
 
-    console.log(`Node ${this.config.id} voted for ${args.candidateId} in term ${args.term}`);
+    console.log(`Nœud ${this.config.id} a voté pour ${args.candidateId} au terme ${args.term}`);
     return reply;
   }
 
   /**
-   * Invoked by leader to assert authority (heartbeat or log replication)
+   * Invoqué par le leader pour affirmer l'autorité (battement de cœur ou réplication de journal)
    */
   receiveHeartbeat(term: number, leaderId: string): void {
     if (term >= this.currentTerm) {
@@ -352,7 +353,7 @@ export class RaftNode {
     }
   }
 
-  // ========== State Transitions ==========
+  // ========== Transitions d'États ==========
 
   private becomeFollower(term: number): void {
     this.state = 'follower';
@@ -360,7 +361,7 @@ export class RaftNode {
     this.votedFor = null;
     this.leaderId = null;
     this.resetElectionTimer();
-    console.log(`Node ${this.config.id} became follower in term ${term}`);
+    console.log(`Nœud ${this.config.id} est devenu suiveur au terme ${term}`);
   }
 
   private becomeCandidate(): void {
@@ -369,9 +370,9 @@ export class RaftNode {
     this.votedFor = this.config.id;
     this.leaderId = null;
 
-    console.log(`Node ${this.config.id} became candidate in term ${this.currentTerm}`);
+    console.log(`Nœud ${this.config.id} est devenu candidat au terme ${this.currentTerm}`);
 
-    // Start election
+    // Démarrer l'élection
     this.startElection();
   }
 
@@ -379,13 +380,13 @@ export class RaftNode {
     this.state = 'leader';
     this.leaderId = this.config.id;
 
-    console.log(`Node ${this.config.id} became LEADER in term ${this.currentTerm}`);
+    console.log(`Nœud ${this.config.id} est devenu LEADER au terme ${this.currentTerm}`);
 
-    // Start sending heartbeats
+    // Commencer à envoyer des battements de cœur
     this.startHeartbeats();
   }
 
-  // ========== Election Logic ==========
+  // ========== Logique d'Élection ==========
 
   private startElectionTimer(): void {
     if (this.electionTimer) {
@@ -395,9 +396,9 @@ export class RaftNode {
     const timeout = this.getRandomElectionTimeout();
 
     this.electionTimer = setTimeout(() => {
-      // Only transition if we haven't heard from a leader
+      // Ne transitionner que si nous n'avons pas entendu d'un leader
       if (this.state === 'follower') {
-        console.log(`Node ${this.config.id} election timeout`);
+        console.log(`Nœud ${this.config.id} délai d'élection`);
         this.becomeCandidate();
       }
     }, timeout);
@@ -422,38 +423,38 @@ export class RaftNode {
       lastLogTerm: this.log.length > 0 ? this.log[this.log.length - 1].term : 0
     };
 
-    let votesReceived = 1; // Vote for self
+    let votesReceived = 1; // Vote pour soi-même
     const majority = Math.floor(this.config.peers.length / 2) + 1;
 
-    // Send RequestVote to all peers
+    // Envoyer RequestVote à tous les pairs
     const promises = this.config.peers.map(peerId =>
       this.sendRequestVote(peerId, args)
     );
 
     const responses = await Promise.allSettled(promises);
 
-    // Count votes
+    // Compter les votes
     for (const result of responses) {
       if (result.status === 'fulfilled' && result.value.voteGranted) {
         votesReceived++;
       }
     }
 
-    // Check if we won
+    // Vérifier si nous avons gagné
     if (votesReceived >= majority && this.state === 'candidate') {
       this.becomeLeader();
     }
   }
 
-  // ========== Network Simulation ==========
+  // ========== Simulation Réseau ==========
 
   private async sendRequestVote(
     peerId: string,
     args: RequestVoteArgs
   ): Promise<RequestVoteReply> {
-    // In a real implementation, this would be an HTTP/gRPC call
-    // For this example, we simulate by calling directly
-    // In the full example below, we'll use actual HTTP
+    // Dans une implémentation réelle, ce serait un appel HTTP/gRPC
+    // Pour cet exemple, nous simulons en appelant directement
+    // Dans l'exemple complet ci-dessous, nous utiliserons HTTP réel
 
     return {
       term: 0,
@@ -462,8 +463,8 @@ export class RaftNode {
   }
 
   private startHeartbeats(): void {
-    // Leader sends periodic heartbeats
-    // Implementation in full example
+    // Le leader envoie des battements de cœur périodiques
+    // Implémentation dans l'exemple complet
   }
 
   stop(): void {
@@ -474,7 +475,7 @@ export class RaftNode {
 }
 ```
 
-### HTTP Server with Raft
+### Serveur HTTP avec Raft
 
 ```typescript
 // server.ts
@@ -507,21 +508,21 @@ export class RaftServer {
   }
 
   private setupRoutes(): void {
-    // RequestVote RPC endpoint
+    // Point de terminaison RPC RequestVote
     this.app.post('/raft/request-vote', (req: Request, res: Response) => {
       const args: RequestVoteArgs = req.body;
       const reply: RequestVoteReply = this.node.requestVote(args);
       res.json(reply);
     });
 
-    // Heartbeat endpoint
+    // Point de terminaison de battement de cœur
     this.app.post('/raft/heartbeat', (req: Request, res: Response) => {
       const { term, leaderId } = req.body;
       this.node.receiveHeartbeat(term, leaderId);
       res.json({ success: true });
     });
 
-    // Status endpoint
+    // Point de terminaison d'état
     this.app.get('/status', (req: Request, res: Response) => {
       res.json({
         id: this.nodeId,
@@ -534,7 +535,7 @@ export class RaftServer {
 
   async start(): Promise<void> {
     this.server = this.app.listen(this.port, () => {
-      console.log(`Node ${this.nodeId} listening on port ${this.port}`);
+      console.log(`Nœud ${this.nodeId} écoute sur le port ${this.port}`);
     });
   }
 
@@ -553,9 +554,9 @@ export class RaftServer {
 
 ---
 
-## Python Implementation
+## Implémentation Python
 
-The same logic in Python:
+La même logique en Python :
 
 ```python
 # raft_node.py
@@ -597,45 +598,45 @@ class RaftNode:
         self.node_id = node_id
         self.peers = peers
 
-        # Persistent state
+        # État persistant
         self.current_term = 0
         self.voted_for: Optional[str] = None
         self.log: List[LogEntry] = []
 
-        # Volatile state
+        # État volatil
         self.state = NodeState.FOLLOWER
         self.leader_id: Optional[str] = None
 
-        # Election timeout
+        # Délai d'élection
         self.election_timeout_min = election_timeout_min
         self.election_timeout_max = election_timeout_max
         self.election_task: Optional[asyncio.Task] = None
         self.heartbeat_task: Optional[asyncio.Task] = None
 
-        # Start election timer
+        # Démarrer le timer d'élection
         self.start_election_timer()
 
     async def request_vote(self, args: RequestVoteArgs) -> RequestVoteReply:
-        """Handle RequestVote RPC from candidate"""
+        """Gérer le RPC RequestVote du candidat"""
         reply = RequestVoteReply(
             term=self.current_term,
             vote_granted=False
         )
 
-        # Rule 1: Reject if candidate's term is lower
+        # Règle 1 : Rejeter si le terme du candidat est inférieur
         if args.term < self.current_term:
             return reply
 
-        # Rule 2: Update to higher term and become follower
+        # Règle 2 : Mettre à jour au terme supérieur et devenir suiveur
         if args.term > self.current_term:
             await self.become_follower(args.term)
             reply.term = args.term
 
-        # Rule 3: Reject if already voted for another candidate
+        # Règle 3 : Rejeter si déjà voté pour un autre candidat
         if self.voted_for is not None and self.voted_for != args.candidate_id:
             return reply
 
-        # Rule 4: Check if candidate's log is up-to-date
+        # Règle 4 : Vérifier si le journal du candidat est à jour
         last_entry = self.log[-1] if self.log else None
         last_log_index = last_entry.index if last_entry else 0
         last_log_term = last_entry.term if last_entry else 0
@@ -649,16 +650,16 @@ class RaftNode:
         if not log_is_up_to_date:
             return reply
 
-        # Grant vote
+        # Accorder le vote
         self.voted_for = args.candidate_id
         reply.vote_granted = True
         self.reset_election_timer()
 
-        print(f"Node {self.node_id} voted for {args.candidate_id} in term {args.term}")
+        print(f"Nœud {self.node_id} a voté pour {args.candidate_id} au terme {args.term}")
         return reply
 
     async def receive_heartbeat(self, term: int, leader_id: str):
-        """Handle heartbeat from leader"""
+        """Gérer le battement de cœur du leader"""
         if term >= self.current_term:
             if term > self.current_term:
                 await self.become_follower(term)
@@ -666,40 +667,40 @@ class RaftNode:
             self.reset_election_timer()
 
     async def become_follower(self, term: int):
-        """Transition to follower state"""
+        """Transitionner vers l'état de suiveur"""
         self.state = NodeState.FOLLOWER
         self.current_term = term
         self.voted_for = None
         self.leader_id = None
 
-        # Cancel heartbeat task if running
+        # Annuler la tâche de battement de cœur si en cours
         if self.heartbeat_task:
             self.heartbeat_task.cancel()
             self.heartbeat_task = None
 
         self.reset_election_timer()
-        print(f"Node {self.node_id} became follower in term {term}")
+        print(f"Nœud {self.node_id} est devenu suiveur au terme {term}")
 
     async def become_candidate(self):
-        """Transition to candidate state and start election"""
+        """Transitionner vers l'état de candidat et démarrer l'élection"""
         self.state = NodeState.CANDIDATE
         self.current_term += 1
         self.voted_for = self.node_id
         self.leader_id = None
 
-        print(f"Node {self.node_id} became candidate in term {self.current_term}")
+        print(f"Nœud {self.node_id} est devenu candidat au terme {self.current_term}")
         await self.start_election()
 
     async def become_leader(self):
-        """Transition to leader state"""
+        """Transitionner vers l'état de leader"""
         self.state = NodeState.LEADER
         self.leader_id = self.node_id
 
-        print(f"Node {self.node_id} became LEADER in term {self.current_term}")
+        print(f"Nœud {self.node_id} est devenu LEADER au terme {self.current_term}")
         self.start_heartbeats()
 
     def start_election_timer(self):
-        """Start or reset the election timeout timer"""
+        """Démarrer ou réinitialiser le timer de délai d'élection"""
         if self.election_task:
             self.election_task.cancel()
 
@@ -707,28 +708,28 @@ class RaftNode:
         self.election_task = asyncio.create_task(self.election_timeout(timeout))
 
     def reset_election_timer(self):
-        """Reset the election timeout timer"""
+        """Réinitialiser le timer de délai d'élection"""
         self.start_election_timer()
 
     def get_random_election_timeout(self) -> int:
-        """Get random timeout within configured range"""
+        """Obtenir un délai aléatoire dans la plage configurée"""
         return random.randint(
             self.election_timeout_min,
             self.election_timeout_max
         )
 
     async def election_timeout(self, timeout_ms: int):
-        """Wait for timeout, then start election if still follower"""
+        """Attendre le délai, puis démarrer l'élection si toujours suiveur"""
         try:
             await asyncio.sleep(timeout_ms / 1000)
             if self.state == NodeState.FOLLOWER:
-                print(f"Node {self.node_id} election timeout")
+                print(f"Nœud {self.node_id} délai d'élection")
                 await self.become_candidate()
         except asyncio.CancelledError:
-            pass  # Timer was reset
+            pass  # Le timer a été réinitialisé
 
     async def start_election(self):
-        """Start leader election by sending RequestVote to all peers"""
+        """Démarrer l'élection de leader en envoyant RequestVote à tous les pairs"""
         args = RequestVoteArgs(
             term=self.current_term,
             candidate_id=self.node_id,
@@ -736,10 +737,10 @@ class RaftNode:
             last_log_term=self.log[-1].term if self.log else 0
         )
 
-        votes_received = 1  # Vote for self
+        votes_received = 1  # Vote pour soi-même
         majority = len(self.peers) // 2 + 1
 
-        # Send RequestVote to all peers concurrently
+        # Envoyer RequestVote à tous les pairs simultanément
         tasks = [
             self.send_request_vote(peer_id, args)
             for peer_id in self.peers
@@ -747,44 +748,44 @@ class RaftNode:
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        # Count votes
+        # Compter les votes
         for result in results:
             if isinstance(result, RequestVoteReply) and result.vote_granted:
                 votes_received += 1
 
-        # Check if we won the election
+        # Vérifier si nous avons gagné l'élection
         if votes_received >= majority and self.state == NodeState.CANDIDATE:
             await self.become_leader()
 
     async def send_request_vote(self, peer_id: str, args: RequestVoteArgs) -> RequestVoteReply:
-        """Send RequestVote RPC to peer (simulated)"""
-        # In real implementation, use HTTP/aiohttp
-        # For this example, return mock response
+        """Envoyer le RPC RequestVote au pair (simulé)"""
+        # Dans une implémentation réelle, utiliser HTTP/aiohttp
+        # Pour cet exemple, retourner une réponse simulée
         return RequestVoteReply(term=0, vote_granted=False)
 
     def start_heartbeats(self):
-        """Leader sends periodic heartbeats"""
+        """Le leader envoie des battements de cœur périodiques"""
         if self.heartbeat_task:
             self.heartbeat_task.cancel()
 
         self.heartbeat_task = asyncio.create_task(self.send_heartbeats())
 
     async def send_heartbeats(self):
-        """Send empty AppendEntries (heartbeats) to all followers"""
+        """Envoyer des AppendEntries vides (battements de cœur) à tous les suiveurs"""
         while self.state == NodeState.LEADER:
             for peer_id in self.peers:
-                # In real implementation, send HTTP POST
-                await asyncio.sleep(0.05)  # Heartbeat interval: 50ms
+                # Dans une implémentation réelle, envoyer HTTP POST
+                await asyncio.sleep(0.05)  # Intervalle de battement de cœur : 50ms
 
     def stop(self):
-        """Stop the node"""
+        """Arrêter le nœud"""
         if self.election_task:
             self.election_task.cancel()
         if self.heartbeat_task:
             self.heartbeat_task.cancel()
 ```
 
-### Flask Server with Raft
+### Serveur Flask avec Raft
 
 ```python
 # server.py
@@ -836,9 +837,9 @@ class RaftServer:
 
 ---
 
-## Docker Compose Setup
+## Configuration Docker Compose
 
-Let's deploy a 3-node Raft cluster:
+Déployons un cluster Raft à 3 nœuds :
 
 ```yaml
 # docker-compose.yml
@@ -895,91 +896,91 @@ networks:
 
 ---
 
-## Running the Example
+## Exécution de l'Exemple
 
-### TypeScript Version
+### Version TypeScript
 
 ```bash
-# 1. Build and start the cluster
+# 1. Construire et démarrer le cluster
 cd distributed-systems-course/examples/04-consensus
 docker-compose up
 
-# 2. Watch the election happen in the logs
-# You'll see nodes transition from follower → candidate → leader
+# 2. Observer l'élection se produire dans les journaux
+# Vous verrez les nœuds transitionner de suiveur → candidat → leader
 
-# 3. Check the status of each node
+# 3. Vérifier l'état de chaque nœud
 curl http://localhost:3001/status
 curl http://localhost:3002/status
 curl http://localhost:3003/status
 
-# 4. Kill the leader and watch re-election
-docker-compose stop node1  # If node1 was leader
-# Watch the logs to see a new leader elected!
+# 4. Tuer le leader et observer la réélection
+docker-compose stop node1  # Si node1 était leader
+# Observer les journaux pour voir un nouveau leader élu !
 
-# 5. Clean up
+# 5. Nettoyer
 docker-compose down
 ```
 
-### Python Version
+### Version Python
 
 ```bash
-# 1. Build and start the cluster
+# 1. Construire et démarrer le cluster
 cd distributed-systems-course/examples/04-consensus
 docker-compose -f docker-compose.python.yml up
 
-# 2-5. Same as above, using ports 4001-4003 for Python nodes
+# 2-5. Identique à ci-dessus, utilisant les ports 4001-4003 pour les nœuds Python
 ```
 
 ---
 
-## Exercises
+## Exercices
 
-### Exercise 1: Observe Election Safety
+### Exercice 1 : Observer la Sécurité d'Élection
 
-Run the cluster and answer these questions:
-1. How long does it take for a leader to be elected?
-2. What happens if you start nodes at different times?
-3. Can you observe a split vote scenario? (Hint: cause a network partition)
+Exécutez le cluster et répondez à ces questions :
+1. Combien de temps faut-il pour qu'un leader soit élu ?
+2. Que se passe-t-il si vous démarrez les nœuds à des moments différents ?
+3. Pouvez-vous observer un scénario de vote partagé ? (Indice : causez une partition réseau)
 
-### Exercise 2: Implement Pre-Vote
+### Exercice 2 : Implémenter le Pré-Vote
 
-Pre-vote is an optimization that prevents disrupting a stable leader:
-1. Research the pre-vote mechanism
-2. Modify the RequestVote handler to check if leader is alive first
-3. Test that pre-vote prevents unnecessary elections
+Le pré-vote est une optimisation qui empêche de perturber un leader stable :
+1. Renseignez-vous sur le mécanisme de pré-vote
+2. Modifiez le gestionnaire RequestVote pour vérifier d'abord si le leader est en vie
+3. Testez que le pré-vote empêche les élections inutiles
 
-### Exercise 3: Election Timeout Tuning
+### Exercice 3 : Réglage du Délai d'Élection
 
-Experiment with different timeout ranges:
-1. Try 50-100ms: What happens? (Hint: too many elections)
-2. Try 500-1000ms: What happens? (Hint: slow leader failover)
-3. Find the optimal range for a 3-node cluster
+Expérimentez avec différentes plages de délai :
+1. Essayez 50-100ms : Que se passe-t-il ? (Indice : trop d'élections)
+2. Essayez 500-1000ms : Que se passe-t-il ? (Indice : basculement de leader lent)
+3. Trouvez la plage optimale pour un cluster à 3 nœuds
 
-### Exercise 4: Network Partition Simulation
+### Exercice 4 : Simulation de Partition Réseau
 
-Simulate a network partition:
-1. Start the cluster and wait for leader election
-2. Isolate node1 from the network (using Docker network isolation)
-3. Observe: Does node1 think it's still leader?
-4. Reconnect: Does the cluster recover correctly?
+Simulez une partition réseau :
+1. Démarrez le cluster et attendez l'élection du leader
+2. Isolez node1 du réseau (en utilisant l'isolement du réseau Docker)
+3. Observez : Est-ce que node1 pense toujours être leader ?
+4. Reconnectez : Est-ce que le cluster récupère correctement ?
 
 ---
 
-## Summary
+## Résumé
 
-In this chapter, you learned:
+Dans ce chapitre, vous avez appris :
 
-- **Why leader election matters**: Prevents split-brain and confusion
-- **Raft's democratic process**: Nodes vote for each other
-- **State transitions**: Follower → Candidate → Leader
-- **RequestVote RPC**: The ballot paper of Raft elections
-- **Randomized timeouts**: Prevent split votes and deadlocks
-- **Election safety**: At most one leader per term
+- **Pourquoi l'élection de leader est importante** : Empêche le split-brain et la confusion
+- **Le processus démocratique de Raft** : Les nœuds votent les uns pour les autres
+- **Transitions d'états** : Suiveur → Candidat → Leader
+- **RPC RequestVote** : Le bulletin de vote des élections Raft
+- **Délais randomisés** : Empêchent les votes partagés et les interblocages
+- **Sécurité d'élection** : Au plus un leader par terme
 
-**Next Chapter**: Log Replication — Once we have a leader, how do we safely replicate data across the cluster?
+**Prochain Chapitre** : Réplication de Journal — Une fois que nous avons un leader, comment répliquons-nous en toute sécurité les données à travers le cluster ?
 
-## 🧠 Chapter Quiz
+## 🧠 Quiz du Chapitre
 
-Test your mastery of these concepts! These questions will challenge your understanding and reveal any gaps in your knowledge.
+Testez votre maîtrise de ces concepts ! Ces questions défieront votre compréhension et révéleront les lacunes dans vos connaissances.
 
 {{#quiz ../../quizzes/consensus-leader-election.toml}}

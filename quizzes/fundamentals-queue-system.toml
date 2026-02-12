@@ -1,14 +1,15 @@
 [[questions]]
 type = "MultipleChoice"
-prompt.prompt = "What's the main benefit of using a queue for long-running tasks?"
-prompt.distractors = ["Faster processing", "Simpler code", "Don't block users waiting for completion"]
-answer.answer = "Don't block users waiting for completion"
-context = "Queues enable asynchronous processing—users get immediate confirmation while work happens in the background. Much better UX than blocking for minutes!"
+prompt.prompt = "Quel est le principal avantage d'utiliser une file pour les tâches longues ?"
+prompt.distractors = ["Traitement plus rapide", "Code plus simple", "Ne pas bloquer les utilisateurs en attente de complétion"]
+answer.answer = "Ne pas bloquer les utilisateurs en attente de complétion"
+context = "Les files permettent le traitement asynchrone — les utilisateurs obtiennent une confirmation immédiate pendant que le travail se produit en arrière-plan. Meilleure UX que de bloquer pendant des minutes !"
 id = "232784d5-84a8-43b0-b031-8b4e08d2e777"
 
 [[questions]]
 type = "ShortAnswer"
-prompt.prompt = "When your queue grows faster than workers can process, what's this called?"
-answer.answer = "backpressure"
-context = "Backpressure occurs when producers outpace consumers. Solutions: add more workers, rate limit producers, or use bounded queues with dropping."
+prompt.prompt = "Lorsque votre file grandit plus vite que les workers ne peuvent traiter, comment cela s'appelle-t-il ?"
+answer.answer = "contre-pression"
+answer.alternatives = ["backpressure", "contre pression"]
+context = "La contre-pression se produit lorsque les producteurs dépassent les consommateurs. Solutions : ajouter plus de workers, limiter le débit des producteurs, ou utiliser des files bornées avec suppression."
 id = "5a1fcf32-92ba-4099-967d-421bc2a315e7"

@@ -1,14 +1,15 @@
 [[questions]]
 type = "MultipleChoice"
-prompt.prompt = "In CAP theorem, which component is mandatory in distributed systems?"
-prompt.distractors = ["Consistency", "Availability", "Partition Tolerance"]
-answer.answer = "Partition Tolerance"
-context = "Partition tolerance is not optional—network partitions WILL happen in distributed systems. The real choice is between C and A during a partition."
+prompt.prompt = "Dans le théorème CAP, quel composant est obligatoire dans les systèmes distribués ?"
+prompt.distractors = ["Cohérence (Consistency)", "Disponibilité (Availability)", "Tolérance au Partitionnement"]
+answer.answer = "Tolérance au Partitionnement"
+context = "La tolérance au partitionnement n'est pas optionnelle — les partitions réseau SE PRODUIRONT dans les systèmes distribués. Le vrai choix est entre C et A pendant un partitionnement."
 id = "05a14de0-b778-4b0f-b2a7-312b8447666c"
 
 [[questions]]
 type = "ShortAnswer"
-prompt.prompt = "What consistency model guarantees that if no new updates are made, eventually all accesses will return the last updated value?"
-answer.answer = "eventual consistency"
-context = "Eventual consistency means the system converges over time. If updates stop, all replicas eventually agree. Great for availability, weaker than strong consistency."
+prompt.prompt = "Quel modèle de cohérence garantit que si aucune nouvelle mise à jour n'est faite, éventuellement tous les accès retourneront la dernière valeur mise à jour ?"
+answer.answer = "cohérence éventuelle"
+answer.alternatives = ["eventual consistency", "consistance eventuelle"]
+context = "La cohérence éventuelle signifie que le système converge au fil du temps. Si les mises à jour s'arrêtent, toutes les répliques finissent par s'accorder. Excellent pour la disponibilité, plus faible que la cohérence forte."
 id = "1cef3167-cd2e-4e1c-8e41-51d77db7b93c"

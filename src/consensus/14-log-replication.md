@@ -1,71 +1,71 @@
-# Log Replication
+# Réplication de Journal
 
-> **Session 10, Part 1** - 30 minutes
+> **Session 10, Partie 1** - 30 minutes
 
-## Learning Objectives
+## Objectifs d'Apprentissage
 
-- [ ] Understand how Raft replicates logs across nodes
-- [ ] Learn the log matching property that ensures consistency
-- [ ] Implement the AppendEntries RPC
-- [ ] Handle log consistency conflicts
-- [ ] Understand commit index and state machine application
+- [ ] Comprendre comment Raft réplique les journaux à travers les nœuds
+- [ ] Apprendre la propriété de correspondance de journal qui assure la cohérence
+- [ ] Implémenter le RPC AppendEntries
+- [ ] Gérer les conflits de cohérence de journal
+- [ ] Comprendre l'index de validation et l'application de la machine à états
 
 ---
 
-## Concept: Keeping Everyone in Sync
+## Concept : Garder Tout le Monde Synchronisé
 
-Once a leader is elected, it needs to replicate client commands to all followers. This is the **log replication** phase of Raft.
+Une fois qu'un leader est élu, il doit répliquer les commandes clientes à tous les suiveurs. C'est la phase de **réplication de journal** de Raft.
 
-### The Challenge
+### Le Défi
 
 ```
-Client sends "SET x = 5" to Leader
+Le Client envoie "SET x = 5" au Leader
 
 ┌──────────┐         ┌──────────┐         ┌──────────┐
-│  Leader  │         │ Follower │         │ Follower │
+│  Leader  │         │ Suiveur  │         │ Suiveur  │
 │          │         │    A     │         │    B     │
 └────┬─────┘         └──────────┘         └──────────┘
      │
-     │ How do we ensure ALL nodes
-     │ have the SAME command log?
+     │ Comment nous assurer que TOUS les nœuds
+     │ ont le MÊME journal de commandes ?
      │
-     │ What if network fails?
-     │ What if follower crashes?
+     │ Que se passe-t-il si le réseau échoue ?
+     │ Que se passe-t-il si le suiveur plante ?
      ▼
 
 ┌─────────────────────────────────────────┐
-│         Log Replication Protocol        │
+│     Protocole de Réplication de Journal │
 └─────────────────────────────────────────┘
 ```
 
 ---
 
-## Log Structure
+## Structure du Journal
 
-Each node maintains a log of commands. A log entry contains:
+Chaque nœud maintient un journal de commandes. Une entrée de journal contient :
 
 ```typescript
 interface LogEntry {
-  index: number;      // Position in the log (starts at 1)
-  term: number;       // Term when entry was received
-  command: string;    // The actual command (e.g., "SET x = 5")
+  index: number;      // Position dans le journal (commence à 1)
+  term: number;       // Terme quand l'entrée a été reçue
+  command: string;    // La commande actuelle (ex: "SET x = 5")
 }
 ```
 
 ```python
 @dataclass
 class LogEntry:
-    index: int       # Position in the log (starts at 1)
-    term: int        # Term when entry was received
-    command: str     # The actual command (e.g., "SET x = 5")
+    index: int       # Position dans le journal (commence à 1)
+    term: int        # Terme quand l'entrée a été reçue
+    command: str     # La commande actuelle (ex: "SET x = 5")
 ```
 
-### Visual Log Representation
+### Représentation Visuelle du Journal
 
 ```
-Node 1 (Leader)              Node 2 (Follower)           Node 3 (Follower)
+Nœud 1 (Leader)              Nœud 2 (Suiveur)           Nœud 3 (Suiveur)
 ┌─────────────────┐         ┌─────────────────┐         ┌─────────────────┐
-│ Index │ Term │ Cmd│         │ Index │ Term │ Cmd│         │ Index │ Term │ Cmd│
+│ Index │ Terme │ Cmd│         │ Index │ Terme │ Cmd│         │ Index │ Terme │ Cmd│
 ├───────┼──────┼────┤         ├───────┼──────┼────┤         ├───────┼──────┼────┤
 │   1   │  1   │SET │         │   1   │  1   │SET │         │   1   │  1   │SET │
 │   2   │  2   │SET │         │   2   │  2   │SET │         │   2   │  2   │SET │
@@ -76,172 +76,172 @@ Node 1 (Leader)              Node 2 (Follower)           Node 3 (Follower)
 
 ---
 
-## The Log Matching Property
+## La Propriété de Correspondance de Journal
 
-This is Raft's key safety guarantee. If two logs contain an entry with the **same index and term**, then all preceding entries are identical and in the same order.
+C'est la garantie de sécurité clé de Raft. Si deux journaux contiennent une entrée avec le **même index et terme**, alors toutes les entrées précédentes sont identiques et dans le même ordre.
 
 ```
-         Log Matching Property
+         Propriété de Correspondance de Journal
 ┌────────────────────────────────────────────────────────┐
 │                                                        │
-│   If logs[i].term == logs[j].term AND                  │
-│   logs[i].index == logs[j].index                       │
+│   Si journaux[i].terme == journaux[j].terme ET        │
+│   journaux[i].index == journaux[j].index              │
 │                                                        │
-│   THEN:                                                │
-│   logs[k] == logs[k] for all k < i                     │
+│   ALORS :                                               │
+│   journaux[k] == journaux[k] pour tout k < i          │
 │                                                        │
 └────────────────────────────────────────────────────────┘
 
-Example:
+Exemple :
 
-Node A: [1,1] [2,1] [3,2] [4,2] [5,2]
+Nœud A : [1,1] [2,1] [3,2] [4,2] [5,2]
               │
-Node B: [1,1] [2,1] [3,2] [4,2] [5,3] [6,3]
+Nœud B : [1,1] [2,1] [3,2] [4,2] [5,3] [6,3]
               │
-              └─ Same index 3, term 2
-                  Therefore entries 1-2 are IDENTICAL
+              └─ Même index 3, terme 2
+                  Par conséquent les entrées 1-2 sont IDENTIQUES
 ```
 
-This property allows Raft to efficiently detect and fix inconsistencies.
+Cette propriété permet à Raft de détecter et corriger efficacement les incohérences.
 
 ---
 
-## AppendEntries RPC
+## RPC AppendEntries
 
-The leader uses AppendEntries to replicate log entries and also as a heartbeat.
+Le leader utilise AppendEntries pour répliquer les entrées de journal et aussi comme un battement de cœur.
 
-### RPC Specification
+### Spécification RPC
 
 ```typescript
 interface AppendEntriesRequest {
-  term: number;           // Leader's term
-  leaderId: string;       // So follower can redirect clients
-  prevLogIndex: number;   // Index of log entry immediately preceding new ones
-  prevLogTerm: number;    // Term of prevLogIndex entry
-  entries: LogEntry[];    // Log entries to store (empty for heartbeat)
-  leaderCommit: number;   // Leader's commit index
+  term: number;           // Terme du leader
+  leaderId: string;       // Pour que le suiveur puisse rediriger les clients
+  prevLogIndex: number;   // Index de l'entrée de journal précédant immédiatement les nouvelles
+  prevLogTerm: number;    // Terme de l'entrée prevLogIndex
+  entries: LogEntry[];    // Entrées de journal à stocker (vide pour battement de cœur)
+  leaderCommit: number;   // Index de validation du leader
 }
 
 interface AppendEntriesResponse {
-  term: number;           // Current term, for leader to update itself
-  success: boolean;       // True if follower contained entry matching prevLogIndex/term
+  term: number;           // Terme actuel, pour que le leader se mette à jour
+  success: boolean;       // Vrai si le suiveur avait l'entrée correspondant à prevLogIndex/terme
 }
 ```
 
 ```python
 @dataclass
 class AppendEntriesRequest:
-    term: int              # Leader's term
-    leader_id: str         # So follower can redirect clients
-    prev_log_index: int    # Index of log entry immediately preceding new ones
-    prev_log_term: int     # Term of prevLogIndex entry
-    entries: List[LogEntry]  # Log entries to store (empty for heartbeat)
-    leader_commit: int     # Leader's commit index
+    term: int              # Terme du leader
+    leader_id: str         # Pour que le suiveur puisse rediriger les clients
+    prev_log_index: int    # Index de l'entrée de journal précédant immédiatement les nouvelles
+    prev_log_term: int     # Terme de l'entrée prevLogIndex
+    entries: List[LogEntry]  # Entrées de journal à stocker (vide pour battement de cœur)
+    leader_commit: int     # Index de validation du leader
 
 @dataclass
 class AppendEntriesResponse:
-    term: int              # Current term, for leader to update itself
-    success: bool          # True if follower contained entry matching prevLogIndex/term
+    term: int              # Terme actuel, pour que le leader se mette à jour
+    success: bool          # Vrai si le suiveur avait l'entrée correspondant à prevLogIndex/terme
 ```
 
 ---
 
-## Log Replication Flow
+## Flux de Réplication de Journal
 
 ```mermaid
 sequenceDiagram
     participant C as Client
     participant L as Leader
-    participant F1 as Follower 1
-    participant F2 as Follower 2
-    participant F3 as Follower 3
+    participant F1 as Suiveur 1
+    participant F2 as Suiveur 2
+    participant F3 as Suiveur 3
 
     C->>L: SET x = 5
-    L->>L: Append to log (uncommitted)
+    L->>L: Ajouter au journal (non validé)
     L->>F1: AppendEntries(entries=[SET x=5], prevLogIndex=2, prevLogTerm=1)
     L->>F2: AppendEntries(entries=[SET x=5], prevLogIndex=2, prevLogTerm=1)
     L->>F3: AppendEntries(entries=[SET x=5], prevLogIndex=2, prevLogTerm=1)
 
-    F1->>F1: Append to log, reply success
-    F2->>F2: Append to log, reply success
-    F3->>F3: Append to log, reply success
+    F1->>F1: Ajouter au journal, répondre succès
+    F2->>F2: Ajouter au journal, répondre succès
+    F3->>F3: Ajouter au journal, répondre succès
 
-    Note over L: Received majority (2/3)
-    L->>L: Commit index = 3
-    L->>L: Apply to state machine: x = 5
-    L->>C: Return success (x = 5)
+    Note over L: Majorité reçue (2/3)
+    L->>L: Index de validation = 3
+    L->>L: Appliquer à la machine à états : x = 5
+    L->>C: Retourner succès (x = 5)
 
     L->>F1: AppendEntries(entries=[], leaderCommit=3)
     L->>F2: AppendEntries(entries=[], leaderCommit=3)
     L->>F3: AppendEntries(entries=[], leaderCommit=3)
 
-    F1->>F1: Apply committed entries
-    F2->>F2: Apply committed entries
-    F3->>F3: Apply committed entries
+    F1->>F1: Appliquer les entrées validées
+    F2->>F2: Appliquer les entrées validées
+    F3->>F3: Appliquer les entrées validées
 ```
 
 ---
 
-## Handling Consistency Conflicts
+## Gestion des Conflits de Cohérence
 
-When a follower's log conflicts with the leader's, the leader resolves it:
+Lorsque le journal d'un suiveur entre en conflit avec celui du leader, le leader le résout :
 
 ```mermaid
 graph TD
-    A[Leader sends AppendEntries] --> B{Follower checks<br/>prevLogIndex/term}
-    B -->|Match found| C[Append new entries<br/>Return success=true]
-    B -->|No match| D[Return success=false]
+    A[Leader envoie AppendEntries] --> B{Suiveur vérifie<br/>prevLogIndex/terme}
+    B -->|Correspondance trouvée| C[Ajouter de nouvelles entrées<br/>Retourner success=true]
+    B -->|Pas de correspondance| D[Retourner success=false]
 
-    D --> E[Leader decrements<br/>nextIndex for follower]
-    E --> F{Retry with<br/>earlier log position?}
+    D --> E[Leader décrémente<br/>nextIndex pour le suiveur]
+    E --> F{Réessayer avec<br/>une position de journal antérieure ?}
 
-    F -->|Yes| A
-    F -->|No match at index 0| G[Append leader's<br/>entire log]
+    F -->|Oui| A
+    F -->|Pas de correspondance à l'index 0| G[Ajouter le journal entier<br/>du leader]
 
-    C --> H[Follower updates<br/>commit index if needed]
-    H --> I[Apply committed entries<br/>to state machine]
+    C --> H[Suiveur met à jour<br/>l'index de validation si nécessaire]
+    H --> I[Appliquer les entrées validées<br/>à la machine à états]
 ```
 
-### Conflict Example
+### Exemple de Conflit
 
 ```
-Before Conflict Resolution:
+Avant Résolution de Conflit :
 
-Leader:  [1,1] [2,2] [3,2]
-Follower:[1,1] [2,1] [3,1] [4,3]  ← Diverged at index 2!
+Leader :  [1,1] [2,2] [3,2]
+Suiveur :[1,1] [2,1] [3,1] [4,3]  ← Divergence à l'index 2 !
 
-Step 1: Leader sends AppendEntries(prevLogIndex=2, prevLogTerm=2)
-        Follower: No match! (has term 1, not 2) → Return success=false
+Étape 1 : Le leader envoie AppendEntries(prevLogIndex=2, prevLogTerm=2)
+        Suiveur : Pas de correspondance ! (a le terme 1, pas 2) → Retourner success=false
 
-Step 2: Leader decrements nextIndex, sends AppendEntries(prevLogIndex=1, prevLogTerm=1)
-        Follower: Match! → Return success=true
+Étape 2 : Le leader décrémente nextIndex, envoie AppendEntries(prevLogIndex=1, prevLogTerm=1)
+        Suiveur : Correspondance ! → Retourner success=true
 
-Step 3: Leader sends entries starting from index 2
-        Follower overwrites [2,1] [3,1] [4,3] with [2,2] [3,2]
+Étape 3 : Le leader envoie les entrées à partir de l'index 2
+        Le suiveur écrase [2,1] [3,1] [4,3] avec [2,2] [3,2]
 
-After Conflict Resolution:
+Après Résolution de Conflit :
 
-Leader:  [1,1] [2,2] [3,2]
-Follower:[1,1] [2,2] [3,2]  ← Now consistent!
+Leader :  [1,1] [2,2] [3,2]
+Suiveur :[1,1] [2,2] [3,2]  ← Maintenant cohérent !
 ```
 
 ---
 
-## Commit Index
+## Index de Validation
 
-The commit index tracks which log entries are committed (durable and safe to apply).
+L'index de validation suit quelles entrées de journal sont validées (durables et sûres à appliquer).
 
 ```typescript
-let commitIndex = 0;  // Index of highest committed entry
+let commitIndex = 0;  // Index de l'entrée validée la plus élevée
 
-// Leader rule: An entry from current term is committed
-// once it's stored on a majority of servers
+// Règle du leader : Une entrée du terme actuel est validée
+// une fois stockée sur une majorité de serveurs
 function updateCommitIndex(): void {
   const N = this.log.length;
 
-  // Find the largest N such that:
-  // 1. A majority of nodes have log entries up to N
-  // 2. log[N].term == currentTerm (safety rule!)
+  // Trouver le plus grand N tel que :
+  // 1. Une majorité de nœuds ont des entrées de journal jusqu'à N
+  // 2. log[N].term == currentTerm (règle de sécurité !)
   for (let i = N; i > this.commitIndex; i--) {
     if (this.log[i - 1].term === this.currentTerm && this.isMajorityReplicated(i)) {
       this.commitIndex = i;
@@ -252,43 +252,43 @@ function updateCommitIndex(): void {
 ```
 
 ```python
-commit_index: int = 0  # Index of highest committed entry
+commit_index: int = 0  # Index de l'entrée validée la plus élevée
 
-# Leader rule: An entry from current term is committed
-# once it's stored on a majority of servers
+# Règle du leader : Une entrée du terme actuel est validée
+# une fois stockée sur une majorité de serveurs
 def update_commit_index(self) -> None:
     N = len(self.log)
 
-    # Find the largest N such that:
-    # 1. A majority of nodes have log entries up to N
-    # 2. log[N].term == currentTerm (safety rule!)
+    # Trouver le plus grand N tel que :
+    # 1. Une majorité de nœuds ont des entrées de journal jusqu'à N
+    # 2. log[N].term == currentTerm (règle de sécurité !)
     for i in range(N, self.commit_index, -1):
         if self.log[i - 1].term == self.current_term and self.is_majority_replicated(i):
             self.commit_index = i
             break
 ```
 
-### Safety Rule: Only Commit Current Term Entries
+### Règle de Sécurité : Valider Seulement les Entrées du Terme Actuel
 
 ```mermaid
 graph LR
-    A[Entry from<br/>previous term] -->|Can be<br/>committed| B[When current<br/>term entry exists]
-    C[Entry from<br/>current term] -->|Can be<br/>committed| D[When replicated<br/>to majority]
+    A[Entrée du<br/>terme précédent] -->|Peut être<br/>validée| B[Quand une entrée du<br/>terme actuel existe]
+    C[Entrée du<br/>terme actuel] -->|Peut être<br/>validée| D[Quand répliquée<br/>à la majorité]
 
-    B --> E[Applied to<br/>state machine]
+    B --> E[Appliquée à<br/>la machine à états]
     D --> E
 
     style B fill:#f99
     style D fill:#9f9
 ```
 
-**Why?** Prevents a leader from committing uncommitted entries from previous terms that could be overwritten.
+**Pourquoi ?** Empêche un leader de valider des entrées non validées de termes précédents qui pourraient être écrasées.
 
 ---
 
-## TypeScript Implementation
+## Implémentation TypeScript
 
-Let's extend our Raft implementation with log replication:
+Étendons notre implémentation Raft avec la réplication de journal :
 
 ```typescript
 // types.ts
@@ -320,32 +320,32 @@ export class RaftNode {
   private commitIndex = 0;
   private lastApplied = 0;
 
-  // For each follower, track next log index to send
+  // Pour chaque suiveur, suivre le prochain index de journal à envoyer
   private nextIndex: Map<string, number> = new Map();
   private matchIndex: Map<string, number> = new Map();
 
-  // ... (previous code from leader election)
+  // ... (code précédent de l'élection de leader)
 
   /**
-   * Handle AppendEntries RPC from leader
+   * Gérer le RPC AppendEntries du leader
    */
   handleAppendEntries(req: AppendEntriesRequest): AppendEntriesResponse {
-    // Reply false if term < currentTerm
+    // Répondre faux si term < currentTerm
     if (req.term < this.currentTerm) {
       return { term: this.currentTerm, success: false };
     }
 
-    // Update current term if needed
+    // Mettre à jour le terme actuel si nécessaire
     if (req.term > this.currentTerm) {
       this.currentTerm = req.term;
       this.state = NodeState.Follower;
       this.votedFor = null;
     }
 
-    // Reset election timeout
+    // Réinitialiser le délai d'élection
     this.resetElectionTimeout();
 
-    // Check log consistency
+    // Vérifier la cohérence du journal
     if (req.prevLogIndex > 0) {
       if (this.log.length < req.prevLogIndex) {
         return { term: this.currentTerm, success: false };
@@ -357,19 +357,19 @@ export class RaftNode {
       }
     }
 
-    // Append new entries
+    // Ajouter de nouvelles entrées
     if (req.entries.length > 0) {
-      // Find first conflicting entry
+      // Trouver la première entrée en conflit
       let insertIndex = req.prevLogIndex;
       for (const entry of req.entries) {
         if (insertIndex < this.log.length) {
           const existing = this.log[insertIndex];
           if (existing.index === entry.index && existing.term === entry.term) {
-            // Already matches, skip
+            // Correspond déjà, sauter
             insertIndex++;
             continue;
           }
-          // Conflict! Delete from here and append
+          // Conflit ! Supprimer à partir d'ici et ajouter
           this.log = this.log.slice(0, insertIndex);
         }
         this.log.push(entry);
@@ -377,7 +377,7 @@ export class RaftNode {
       }
     }
 
-    // Update commit index
+    // Mettre à jour l'index de validation
     if (req.leaderCommit > this.commitIndex) {
       this.commitIndex = Math.min(req.leaderCommit, this.log.length);
       this.applyCommittedEntries();
@@ -387,19 +387,19 @@ export class RaftNode {
   }
 
   /**
-   * Apply committed entries to state machine
+   * Appliquer les entrées validées à la machine à états
    */
   private applyCommittedEntries(): void {
     while (this.lastApplied < this.commitIndex) {
       this.lastApplied++;
       const entry = this.log[this.lastApplied - 1];
       this.stateMachine.apply(entry);
-      console.log(`Node ${this.nodeId} applied: ${entry.command}`);
+      console.log(`Nœud ${this.nodeId} appliqué : ${entry.command}`);
     }
   }
 
   /**
-   * Leader: replicate log to followers
+   * Leader : répliquer le journal aux suiveurs
    */
   private replicateLog(): void {
     if (this.state !== NodeState.Leader) return;
@@ -408,7 +408,7 @@ export class RaftNode {
       const nextIdx = this.nextIndex.get(followerId) || 1;
 
       const prevLogIndex = nextIdx - 1;
-      const prevLogTerm = prevLogIndex > 0 ? this.log[prevLogIndex - 1].term : 0;
+      const prevLogTerm = nextIdx > 1 ? this.log[nextIdx - 2].term : 0;
       const entries = this.log.slice(nextIdx - 1);
 
       const req: AppendEntriesRequest = {
@@ -425,7 +425,7 @@ export class RaftNode {
   }
 
   /**
-   * Leader: handle AppendEntries response
+   * Leader : gérer la réponse AppendEntries
    */
   private handleAppendEntriesResponse(
     followerId: string,
@@ -435,7 +435,7 @@ export class RaftNode {
     if (this.state !== NodeState.Leader) return;
 
     if (resp.term > this.currentTerm) {
-      // Follower has higher term, step down
+      // Le suiveur a un terme supérieur, descendre
       this.currentTerm = resp.term;
       this.state = NodeState.Follower;
       this.votedFor = null;
@@ -443,39 +443,38 @@ export class RaftNode {
     }
 
     if (resp.success) {
-      // Update match index and next index
+      // Mettre à jour l'index de correspondance et le prochain index
       const lastIndex = req.prevLogIndex + req.entries.length;
       this.matchIndex.set(followerId, lastIndex);
       this.nextIndex.set(followerId, lastIndex + 1);
 
-      // Try to commit more entries
+      // Essayer de valider plus d'entrées
       this.updateCommitIndex();
     } else {
-      // Follower's log is inconsistent, backtrack
+      // Le journal du suiveur est incohérent, revenir en arrière
       const currentNext = this.nextIndex.get(followerId) || 1;
       this.nextIndex.set(followerId, Math.max(1, currentNext - 1));
 
-      // Retry immediately
+      // Réessayer immédiatement
       setTimeout(() => this.replicateLog(), 50);
     }
   }
 
   /**
-   * Leader: update commit index if majority has entry
+   * Leader : mettre à jour l'index de validation si la majorité a l'entrée
    */
   private updateCommitIndex(): void {
     if (this.state !== NodeState.Leader) return;
 
     const N = this.log.length;
 
-    // Find the largest N such that a majority have log entries up to N
+    // Trouver le plus grand N tel qu'une majorité ait des entrées de journal jusqu'à N
     for (let i = N; i > this.commitIndex; i--) {
       if (this.log[i - 1].term !== this.currentTerm) {
-        // Only commit entries from current term
         continue;
       }
 
-      let count = 1; // Leader has it
+      let count = 1; // Le leader l'a
       for (const matchIdx of this.matchIndex.values()) {
         if (matchIdx >= i) count++;
       }
@@ -490,14 +489,14 @@ export class RaftNode {
   }
 
   /**
-   * Client: submit command to cluster
+   * Client : soumettre une commande au cluster
    */
   async submitCommand(command: string): Promise<void> {
     if (this.state !== NodeState.Leader) {
-      throw new Error('Not a leader. Redirect to actual leader.');
+      throw new Error('Pas un leader. Rediriger vers le leader actuel.');
     }
 
-    // Append to local log
+    // Ajouter au journal local
     const entry: LogEntry = {
       index: this.log.length + 1,
       term: this.currentTerm,
@@ -505,10 +504,10 @@ export class RaftNode {
     };
     this.log.push(entry);
 
-    // Replicate to followers
+    // Répliquer aux suiveurs
     this.replicateLog();
 
-    // Wait for commit
+    // Attendre la validation
     await this.waitForCommit(entry.index);
   }
 
@@ -529,7 +528,7 @@ export class RaftNode {
 
 ---
 
-## Python Implementation
+## Implémentation Python
 
 ```python
 # types.py
@@ -561,55 +560,50 @@ class AppendEntriesResponse:
 # raft_node.py
 import asyncio
 from enum import Enum
-from typing import List, Dict, Optional
-
-class NodeState(Enum):
-    FOLLOWER = "follower"
-    CANDIDATE = "candidate"
-    LEADER = "leader"
+from typing import List, Dict
 
 class RaftNode:
     def __init__(self, node_id: str, peer_ids: List[str]):
         self.node_id = node_id
         self.peer_ids = peer_ids
 
-        # Persistent state
+        # État persistant
         self.current_term = 0
         self.voted_for: Optional[str] = None
         self.log: List[LogEntry] = []
 
-        # Volatile state
+        # État volatil
         self.commit_index = 0
         self.last_applied = 0
         self.state = NodeState.FOLLOWER
 
-        # Leader state
+        # État du leader
         self.next_index: Dict[str, int] = {}
         self.match_index: Dict[str, int] = {}
 
-        # State machine
+        # Machine à états
         self.state_machine = StateMachine()
 
-        # Election timeout
+        # Délai d'élection
         self.election_timeout: Optional[asyncio.Task] = None
 
     async def handle_append_entries(self, req: AppendEntriesRequest) -> AppendEntriesResponse:
-        """Handle AppendEntries RPC from leader"""
+        """Gérer le RPC AppendEntries du leader"""
 
-        # Reply false if term < currentTerm
+        # Répondre faux si term < currentTerm
         if req.term < self.current_term:
             return AppendEntriesResponse(term=self.current_term, success=False)
 
-        # Update current term if needed
+        # Mettre à jour le terme actuel si nécessaire
         if req.term > self.current_term:
             self.current_term = req.term
             self.state = NodeState.FOLLOWER
             self.voted_for = None
 
-        # Reset election timeout
+        # Réinitialiser le délai d'élection
         self.reset_election_timeout()
 
-        # Check log consistency
+        # Vérifier la cohérence du journal
         if req.prev_log_index > 0:
             if len(self.log) < req.prev_log_index:
                 return AppendEntriesResponse(term=self.current_term, success=False)
@@ -618,23 +612,23 @@ class RaftNode:
             if prev_entry.term != req.prev_log_term:
                 return AppendEntriesResponse(term=self.current_term, success=False)
 
-        # Append new entries
+        # Ajouter de nouvelles entrées
         if req.entries:
-            # Find first conflicting entry
+            # Trouver la première entrée en conflit
             insert_index = req.prev_log_index
             for entry in req.entries:
                 if insert_index < len(self.log):
                     existing = self.log[insert_index]
                     if existing.index == entry.index and existing.term == entry.term:
-                        # Already matches, skip
+                        # Correspond déjà, sauter
                         insert_index += 1
                         continue
-                    # Conflict! Delete from here and append
+                    # Conflit ! Supprimer à partir d'ici et ajouter
                     self.log = self.log[:insert_index]
                 self.log.append(entry)
                 insert_index += 1
 
-        # Update commit index
+        # Mettre à jour l'index de validation
         if req.leader_commit > self.commit_index:
             self.commit_index = min(req.leader_commit, len(self.log))
             await self.apply_committed_entries()
@@ -642,15 +636,15 @@ class RaftNode:
         return AppendEntriesResponse(term=self.current_term, success=True)
 
     async def apply_committed_entries(self):
-        """Apply committed entries to state machine"""
+        """Appliquer les entrées validées à la machine à états"""
         while self.last_applied < self.commit_index:
             self.last_applied += 1
             entry = self.log[self.last_applied - 1]
             self.state_machine.apply(entry)
-            print(f"Node {self.node_id} applied: {entry.command}")
+            print(f"Nœud {self.node_id} appliqué : {entry.command}")
 
     async def replicate_log(self):
-        """Leader: replicate log to followers"""
+        """Leader : répliquer le journal aux suiveurs"""
         if self.state != NodeState.LEADER:
             return
 
@@ -678,47 +672,47 @@ class RaftNode:
         resp: AppendEntriesResponse,
         req: AppendEntriesRequest
     ):
-        """Leader: handle AppendEntries response"""
+        """Leader : gérer la réponse AppendEntries"""
         if self.state != NodeState.LEADER:
             return
 
         if resp.term > self.current_term:
-            # Follower has higher term, step down
+            # Le suiveur a un terme supérieur, descendre
             self.current_term = resp.term
             self.state = NodeState.FOLLOWER
             self.voted_for = None
             return
 
         if resp.success:
-            # Update match index and next index
+            # Mettre à jour l'index de correspondance et le prochain index
             last_index = req.prev_log_index + len(req.entries)
             self.match_index[follower_id] = last_index
             self.next_index[follower_id] = last_index + 1
 
-            # Try to commit more entries
+            # Essayer de valider plus d'entrées
             await self.update_commit_index()
         else:
-            # Follower's log is inconsistent, backtrack
+            # Le journal du suiveur est incohérent, revenir en arrière
             current_next = self.next_index.get(follower_id, 1)
             self.next_index[follower_id] = max(1, current_next - 1)
 
-            # Retry immediately
+            # Réessayer immédiatement
             asyncio.create_task(self.replicate_log())
 
     async def update_commit_index(self):
-        """Leader: update commit index if majority has entry"""
+        """Leader : mettre à jour l'index de validation si la majorité a l'entrée"""
         if self.state != NodeState.LEADER:
             return
 
         N = len(self.log)
 
-        # Find the largest N such that a majority have log entries up to N
+        # Trouver le plus grand N tel qu'une majorité ait des entrées de journal jusqu'à N
         for i in range(N, self.commit_index, -1):
             if self.log[i - 1].term != self.current_term:
-                # Only commit entries from current term
+                # Ne valider que les entrées du terme actuel
                 continue
 
-            count = 1  # Leader has it
+            count = 1  # Le leader l'a
             for match_idx in self.match_index.values():
                 if match_idx >= i:
                     count += 1
@@ -730,11 +724,11 @@ class RaftNode:
                 break
 
     async def submit_command(self, command: str) -> None:
-        """Client: submit command to cluster"""
+        """Client : soumettre une commande au cluster"""
         if self.state != NodeState.LEADER:
-            raise Exception("Not a leader. Redirect to actual leader.")
+            raise Exception("Pas un leader. Rediriger vers le leader actuel.")
 
-        # Append to local log
+        # Ajouter au journal local
         entry = LogEntry(
             index=len(self.log) + 1,
             term=self.current_term,
@@ -742,14 +736,14 @@ class RaftNode:
         )
         self.log.append(entry)
 
-        # Replicate to followers
+        # Répliquer aux suiveurs
         await self.replicate_log()
 
-        # Wait for commit
+        # Attendre la validation
         await self._wait_for_commit(entry.index)
 
     async def _wait_for_commit(self, index: int):
-        """Wait for an entry to be committed"""
+        """Attendre qu'une entrée soit validée"""
         while self.commit_index < index:
             await asyncio.sleep(0.05)
 ```
@@ -757,29 +751,29 @@ class RaftNode:
 ```python
 # state_machine.py
 class StateMachine:
-    """Simple key-value store state machine"""
+    """Machine à états de magasin clé-valeur simple"""
     def __init__(self):
         self.data: Dict[str, str] = {}
 
     def apply(self, entry: LogEntry):
-        """Apply a committed log entry to the state machine"""
+        """Appliquer une entrée de journal validée à la machine à états"""
         parts = entry.command.split()
         if parts[0] == "SET" and len(parts) == 3:
             key, value = parts[1], parts[2]
             self.data[key] = value
-            print(f"Applied: {key} = {value}")
+            print(f"Appliqué : {key} = {value}")
         elif parts[0] == "DELETE" and len(parts) == 2:
             key = parts[1]
             if key in self.data:
                 del self.data[key]
-                print(f"Deleted: {key}")
+                print(f"Supprimé : {key}")
 ```
 
 ---
 
-## Testing Log Replication
+## Tests de Réplication de Journal
 
-### TypeScript Test
+### Test TypeScript
 
 ```typescript
 // test-log-replication.ts
@@ -790,13 +784,13 @@ async function testLogReplication() {
     new RaftNode('node3', ['node1', 'node2']),
   ];
 
-  // Simulate leader election (node1 wins)
+  // Simuler l'élection de leader (node1 gagne)
   await nodes[0].becomeLeader();
 
-  // Submit command to leader
+  // Soumettre une commande au leader
   await nodes[0].submitCommand('SET x = 5');
 
-  // Verify all nodes have the entry
+  // Vérifier que tous les nœuds ont l'entrée
   for (const node of nodes) {
     const entry = node.getLog()[0];
     console.log(`${node.nodeId}: ${entry.command}`);
@@ -804,7 +798,7 @@ async function testLogReplication() {
 }
 ```
 
-### Python Test
+### Test Python
 
 ```python
 # test_log_replication.py
@@ -817,13 +811,13 @@ async def test_log_replication():
         RaftNode('node3', ['node1', 'node2']),
     ]
 
-    # Simulate leader election (node1 wins)
+    # Simuler l'élection de leader (node1 gagne)
     await nodes[0].become_leader()
 
-    # Submit command to leader
+    # Soumettre une commande au leader
     await nodes[0].submit_command('SET x = 5')
 
-    # Verify all nodes have the entry
+    # Vérifier que tous les nœuds ont l'entrée
     for node in nodes:
         entry = node.get_log()[0]
         print(f"{node.node_id}: {entry.command}")
@@ -833,71 +827,75 @@ asyncio.run(test_log_replication())
 
 ---
 
-## Exercises
+## Exercices
 
-### Exercise 1: Basic Log Replication
-1. Start a 3-node cluster
-2. Elect a leader
-3. Submit `SET x = 10` to the leader
-4. Verify the entry is on all nodes
-5. Check commit index advancement
+### Exercice 1 : Réplication de Journal de Base
 
-**Expected Result:** The entry appears on all nodes after being committed.
+1. Démarrer un cluster à 3 nœuds
+2. Élire un leader
+3. Soumettre `SET x = 10` au leader
+4. Vérifier que l'entrée est sur tous les nœuds
+5. Vérifier l'avancement de l'index de validation
 
-### Exercise 2: Conflict Resolution
-1. Start a 3-node cluster
-2. Create a log divergence (manually edit follower logs)
-3. Have the leader replicate new entries
-4. Observe how the follower's log is corrected
+**Résultat Attendu :** L'entrée apparaît sur tous les nœuds après validation.
 
-**Expected Result:** The follower's conflicting entries are overwritten.
+### Exercice 2 : Résolution de Conflit
 
-### Exercise 3: Commit Index Safety
-1. Start a 5-node cluster
-2. Partition the network (2 nodes isolated)
-3. Submit commands to the leader
-4. Verify entries are committed with majority (3 nodes)
-5. Heal the partition
-6. Verify isolated nodes catch up
+1. Démarrer un cluster à 3 nœuds
+2. Créer une divergence de journal (modifier manuellement les journaux des suiveurs)
+3. Faire répliquer de nouvelles entrées au leader
+4. Observer comment le journal du suiveur est corrigé
 
-**Expected Result:** Commands commit with 3 nodes, isolated nodes catch up after healing.
+**Résultat Attendu :** Les entrées conflictuelles du suiveur sont écrasées.
 
-### Exercise 4: State Machine Application
-1. Implement a key-value store state machine
-2. Submit multiple SET commands
-3. Verify the state machine applies them in order
-4. Kill and restart a node
-5. Verify the state machine is rebuilt from the log
+### Exercice 3 : Sécurité de l'Index de Validation
 
-**Expected Result:** State machine reflects all committed commands, even after restart.
+1. Démarrer un cluster à 5 nœuds
+2. Partitionner le réseau (2 nœuds isolés)
+3. Soumettre des commandes au leader
+4. Vérifier que les entrées sont validées avec la majorité (3 nœuds)
+5. Guérir la partition
+6. Vérifier que les nœuds isolés rattrapent
+
+**Résultat Attendu :** Les commandes sont validées avec 3 nœuds, les nœuds isolés rattrapent après guérison.
+
+### Exercice 4 : Application de la Machine à États
+
+1. Implémenter une machine à états de magasin clé-valeur
+2. Soumettre plusieurs commandes SET
+3. Vérifier que la machine à états les applique dans l'ordre
+4. Tuer et redémarrer un nœud
+5. Vérifier que la machine à états est reconstruite à partir du journal
+
+**Résultat Attendu :** La machine à états reflète toutes les commandes validées, même après redémarrage.
 
 ---
 
-## Common Pitfalls
+## Pièges Courants
 
-| Pitfall | Symptom | Solution |
+| Piège | Symptôme | Solution |
 |---------|---------|----------|
-| Committing previous term entries | Entries get lost | Only commit entries from current term |
-| Not applying entries in order | Inconsistent state | Apply from lastApplied+1 to commitIndex |
-| Infinite conflict resolution loop | CPU spike | Ensure nextIndex doesn't go below 1 |
-| Applying uncommitted entries | Data loss on leader crash | Never apply before commitIndex |
+| Valider les entrées du terme précédent | Les entrées sont perdues | Ne valider que les entrées du terme actuel |
+| Ne pas appliquer les entrées dans l'ordre | État incohérent | Appliquer de lastApplied+1 à commitIndex |
+| Boucle de résolution de conflit infinie | Pic de CPU | S'assurer que nextIndex ne descend pas en dessous de 1 |
+| Appliquer des entrées non validées | Perte de données lors de la panne du leader | Ne jamais appliquer avant commitIndex |
 
 ---
 
-## Key Takeaways
+## Points Clés à Retenir
 
-1. **Log replication** ensures all nodes execute the same commands in the same order
-2. **AppendEntries RPC** handles both replication and heartbeats
-3. **Log matching property** enables efficient conflict resolution
-4. **Commit index** tracks which entries are safely replicated
-5. **State machine** applies committed entries deterministically
+1. La **réplication de journal** assure que tous les nœuds exécutent les mêmes commandes dans le même ordre
+2. Le **RPC AppendEntries** gère à la fois la réplication et les battements de cœur
+3. La **propriété de correspondance de journal** permet une résolution de conflit efficace
+4. **L'index de validation** suit quelles entrées sont répliquées en toute sécurité
+5. La **machine à états** applique les entrées validées de manière déterministe
 
 ---
 
-**Next:** Complete Consensus System Implementation →
+**Suite :** Implémentation Complète du Système de Consensus →
 
-## 🧠 Chapter Quiz
+## 🧠 Quiz du Chapitre
 
-Test your mastery of these concepts! These questions will challenge your understanding and reveal any gaps in your knowledge.
+Testez votre maîtrise de ces concepts ! Ces questions défieront votre compréhension et révéleront les lacunes dans vos connaissances.
 
 {{#quiz ../../quizzes/consensus-log-replication.toml}}

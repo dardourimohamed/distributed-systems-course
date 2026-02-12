@@ -1,8 +1,8 @@
-# Docker Setup
+# Configuration Docker
 
-This guide covers installing Docker and Docker Compose for running the course examples.
+Ce guide couvre l'installation de Docker et Docker Compose pour exécuter les exemples du cours.
 
-## Installing Docker
+## Installation de Docker
 
 ### Linux
 
@@ -14,47 +14,47 @@ sudo usermod -aG docker $USER
 
 ### macOS
 
-Download Docker Desktop from [docker.com](https://www.docker.com/products/docker-desktop)
+Téléchargez Docker Desktop depuis [docker.com](https://www.docker.com/products/docker-desktop)
 
 ### Windows
 
-Download Docker Desktop from [docker.com](https://www.docker.com/products/docker-desktop)
+Téléchargez Docker Desktop depuis [docker.com](https://www.docker.com/products/docker-desktop)
 
-## Verify Installation
+## Vérifier l'Installation
 
 ```bash
 docker --version
 docker-compose --version
 ```
 
-## Running Course Examples
+## Exécuter les Exemples du Cours
 
-Each chapter includes a Docker Compose file:
+Chaque chapitre inclut un fichier Docker Compose :
 
 ```bash
 cd examples/01-queue
 docker-compose up
 ```
 
-## Common Commands
+## Commandes Courantes
 
 ```bash
-# Start services
+# Démarrer les services
 docker-compose up
 
-# Start in background
+# Démarrer en arrière-plan
 docker-compose up -d
 
-# View logs
+# Voir les journaux
 docker-compose logs
 
-# Stop services
+# Arrêter les services
 docker-compose down
 
-# Rebuild after code changes
+# Reconstruire après des changements de code
 docker-compose up --build
 ```
 
-## Troubleshooting
+## Dépannage
 
-See [Troubleshooting](./troubleshooting.md) for common issues.
+Voir [Dépannage](./troubleshooting.md) pour les problèmes courants.

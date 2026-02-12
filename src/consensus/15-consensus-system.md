@@ -1,63 +1,63 @@
-# Consensus System Implementation
+# Implémentation du Système de Consensus
 
-> **Session 10, Part 2** - 60 minutes
+> **Session 10, Partie 2** - 60 minutes
 
-## Learning Objectives
+## Objectifs d'Apprentissage
 
-- [ ] Build a complete Raft-based consensus system
-- [ ] Implement a state machine abstraction (key-value store)
-- [ ] Create client APIs for get/set operations
-- [ ] Deploy and test the full system with Docker Compose
-- [ ] Verify safety and liveness properties
+- [ ] Construire un système de consensus complet basé sur Raft
+- [ ] Implémenter une abstraction de machine à états (magasin clé-valeur)
+- [ ] Créer des APIs clientes pour les opérations get/set
+- [ ] Déployer et tester le système complet avec Docker Compose
+- [ ] Vérifier les propriétés de sécurité et de vivacité
 
 ---
 
-## Overview: Putting It All Together
+## Aperçu : Tout Combiner
 
-In the previous chapters, we implemented Raft's two core components:
+Dans les chapitres précédents, nous avons implémenté les deux composants principaux de Raft :
 
-1. **Leader Election** (Session 9) - Democratic voting to select a leader
-2. **Log Replication** (Session 10, Part 1) - Replicating commands across nodes
+1. **Élection de Leader** (Session 9) - Vote démocratique pour sélectionner un leader
+2. **Réplication de Journal** (Session 10, Partie 1) - Répliquer les commandes à travers les nœuds
 
-Now we combine them into a **complete consensus system** - a distributed key-value store that provides strong consistency guarantees.
+Maintenant nous les combinons en un **système de consensus complet** - un magasin clé-valeur distribué qui fournit des garanties de forte cohérence.
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│                  Raft Consensus System                     │
+│              Système de Consensus Raft                    │
 ├────────────────────────────────────────────────────────────┤
 │                                                             │
-│  Client  ──→  Leader  ──→  Log Replication  ──→  Followers │
+│  Client  ──→  Leader  ──→  Réplication de Journal  ──→  Suiveurs │
 │     │            │              │                    │      │
 │     │            ▼              ▼                    ▼      │
-│     │         Leader Election (if needed)                   │
+│     │         Élection de Leader (si nécessaire)                │
 │     │            │                                          │
 │     ▼            ▼                                          ▼
-│  State Machine (all nodes apply same commands)             │
+│  Machine à États (tous les nœuds appliquent les mêmes commandes) │
 │                                                             │
 └────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## System Architecture
+## Architecture du Système
 
 ```mermaid
 graph TB
-    subgraph "Client Layer"
+    subgraph "Couche Client"
         C1[Client 1]
         C2[Client 2]
     end
 
-    subgraph "Raft Cluster"
-        N1[Node 1: Leader]
-        N2[Node 2: Follower]
-        N3[Node 3: Follower]
+    subgraph "Cluster Raft"
+        N1[Nœud 1 : Leader]
+        N2[Nœud 2 : Suiveur]
+        N3[Nœud 3 : Suiveur]
     end
 
-    subgraph "State Machine Layer"
-        SM1[KV Store 1]
-        SM2[KV Store 2]
-        SM3[KV Store 3]
+    subgraph "Couche Machine à États"
+        SM1[Magasin CV 1]
+        SM2[Magasin CV 2]
+        SM3[Magasin CV 3]
     end
 
     C1 -->|SET/GET| N1
@@ -78,20 +78,20 @@ graph TB
 
 ---
 
-## Complete TypeScript Implementation
+## Implémentation Complète TypeScript
 
-### Project Structure
+### Structure du Projet
 
 ```
 typescript-raft/
 ├── package.json
 ├── tsconfig.json
 ├── src/
-│   ├── types.ts              # Shared types
-│   ├── state-machine.ts      # KV store state machine
-│   ├── raft-node.ts          # Complete Raft implementation
-│   ├── server.ts             # HTTP API server
-│   └── index.ts              # Entry point
+│   ├── types.ts              # Types partagés
+│   ├── state-machine.ts      # Machine à états de magasin CV
+│   ├── raft-node.ts          # Implémentation Raft complète
+│   ├── server.ts             # Serveur API HTTP
+│   └── index.ts              # Point d'entrée
 └── docker-compose.yml
 ```
 
@@ -101,7 +101,7 @@ typescript-raft/
 {
   "name": "typescript-raft-kv-store",
   "version": "1.0.0",
-  "description": "Distributed key-value store using Raft consensus",
+  "description": "Magasin clé-valeur distribué utilisant le consensus Raft",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -124,21 +124,21 @@ typescript-raft/
 ### types.ts
 
 ```typescript
-// Node states
+// États des nœuds
 export enum NodeState {
   FOLLOWER = 'follower',
   CANDIDATE = 'candidate',
   LEADER = 'leader'
 }
 
-// Log entry
+// Entrée de journal
 export interface LogEntry {
   index: number;
   term: number;
   command: string;
 }
 
-// RequestVote RPC
+// RPC RequestVote
 export interface RequestVoteRequest {
   term: number;
   candidateId: string;
@@ -151,7 +151,7 @@ export interface RequestVoteResponse {
   voteGranted: boolean;
 }
 
-// AppendEntries RPC
+// RPC AppendEntries
 export interface AppendEntriesRequest {
   term: number;
   leaderId: string;
@@ -166,7 +166,7 @@ export interface AppendEntriesResponse {
   success: boolean;
 }
 
-// Client commands
+// Commandes clientes
 export interface SetCommand {
   type: 'SET';
   key: string;
@@ -192,14 +192,14 @@ export type Command = SetCommand | GetCommand | DeleteCommand;
 import { LogEntry } from './types';
 
 /**
- * Key-Value Store State Machine
- * Applies committed log entries to build consistent state
+ * Machine à États de Magasin Clé-Valeur
+ * Applique les entrées de journal validées pour construire un état cohérent
  */
 export class KVStoreStateMachine {
   private data: Map<string, string> = new Map();
 
   /**
-   * Apply a committed log entry to the state machine
+   * Appliquer une entrée de journal validée à la machine à états
    */
   apply(entry: LogEntry): void {
     try {
@@ -208,44 +208,44 @@ export class KVStoreStateMachine {
       switch (command.type) {
         case 'SET':
           this.data.set(command.key, command.value);
-          console.log(`[State Machine] SET ${command.key} = ${command.value}`);
+          console.log(`[Machine à États] SET ${command.key} = ${command.value}`);
           break;
 
         case 'DELETE':
           if (this.data.has(command.key)) {
             this.data.delete(command.key);
-            console.log(`[State Machine] DELETE ${command.key}`);
+            console.log(`[Machine à États] DELETE ${command.key}`);
           }
           break;
 
         case 'GET':
-          // Read-only commands don't modify state
+          // Les commandes en lecture seule ne modifient pas l'état
           break;
 
         default:
-          console.warn(`[State Machine] Unknown command type: ${command.type}`);
+          console.warn(`[Machine à États] Type de commande inconnu : ${command.type}`);
       }
     } catch (error) {
-      console.error(`[State Machine] Failed to apply entry:`, error);
+      console.error(`[Machine à États] Échec de l'application de l'entrée :`, error);
     }
   }
 
   /**
-   * Get a value from the state machine
+   * Obtenir une valeur de la machine à états
    */
   get(key: string): string | undefined {
     return this.data.get(key);
   }
 
   /**
-   * Get all key-value pairs
+   * Obtenir toutes les paires clé-valeur
    */
   getAll(): Record<string, string> {
     return Object.fromEntries(this.data);
   }
 
   /**
-   * Clear the state machine (for testing)
+   * Effacer la machine à états (pour les tests)
    */
   clear(): void {
     this.data.clear();
@@ -280,21 +280,21 @@ export class RaftNode {
   // Configuration
   private config: ClusterConfig;
 
-  // Persistent state (survives restarts)
+  // État persistant (survit aux redémarrages)
   private currentTerm: number = 0;
   private votedFor: string | null = null;
   private log: LogEntry[] = [];
 
-  // Volatile state (reset on restart)
+  // État volatil (réinitialisé au redémarrage)
   private commitIndex: number = 0;
   private lastApplied: number = 0;
   private state: NodeState = NodeState.FOLLOWER;
 
-  // Leader state (reset on election)
+  // État du leader (réinitialisé à l'élection)
   private nextIndex: Map<string, number> = new Map();
   private matchIndex: Map<string, number> = new Map();
 
-  // Components
+  // Composants
   private stateMachine: KVStoreStateMachine;
   private leaderId: string | null = null;
 
@@ -308,26 +308,26 @@ export class RaftNode {
     this.resetElectionTimeout();
   }
 
-  // ========== Public API ==========
+  // ========== API Publique ==========
 
   /**
-   * Client: Submit a command to the cluster
+   * Client : Soumettre une commande au cluster
    */
   async submitCommand(command: Command): Promise<any> {
-    // Redirect to leader if not leader
-    if (this.state !== NodeState.LeADER) {
+    // Rediriger vers le leader si pas leader
+    if (this.state !== NodeState.LEADER) {
       if (this.leaderId) {
-        throw new Error(`Not a leader. Please redirect to ${this.leaderId}`);
+        throw new Error(`Pas un leader. Veuillez rediriger vers ${this.leaderId}`);
       }
-      throw new Error('No leader known. Please retry.');
+      throw new Error('Aucun leader connu. Veuillez réessayer.');
     }
 
-    // Handle GET commands (read-only, no consensus needed)
+    // Gérer les commandes GET (lecture seule, pas de consensus nécessaire)
     if (command.type === 'GET') {
       return this.stateMachine.get(command.key);
     }
 
-    // Append to local log
+    // Ajouter au journal local
     const entry: LogEntry = {
       index: this.log.length + 1,
       term: this.currentTerm,
@@ -335,13 +335,13 @@ export class RaftNode {
     };
     this.log.push(entry);
 
-    // Replicate to followers
+    // Répliquer aux suiveurs
     this.replicateLog();
 
-    // Wait for commit
+    // Attendre la validation
     await this.waitForCommit(entry.index);
 
-    // Return result
+    // Retourner le résultat
     if (command.type === 'SET') {
       return { key: command.key, value: command.value };
     } else if (command.type === 'DELETE') {
@@ -350,42 +350,42 @@ export class RaftNode {
   }
 
   /**
-   * Start the node (begin election timeout)
+   * Démarrer le nœud (commencer le délai d'élection)
    */
   start(): void {
     this.resetElectionTimeout();
   }
 
   /**
-   * Stop the node (clear timers)
+   * Arrêter le nœud (effacer les timers)
    */
   stop(): void {
     if (this.electionTimer) clearTimeout(this.electionTimer);
-    if (this.heartbeatTimer) clearTimeout(this.heartbeatTimer);
+    if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
   }
 
-  // ========== RPC Handlers ==========
+  // ========== Gestionnaires RPC ==========
 
   /**
-   * Handle RequestVote RPC
+   * Gérer le RPC RequestVote
    */
   handleRequestVote(req: RequestVoteRequest): RequestVoteResponse {
-    // If term < currentTerm, reject
+    // Si term < currentTerm, rejeter
     if (req.term < this.currentTerm) {
       return { term: this.currentTerm, voteGranted: false };
     }
 
-    // If term > currentTerm, update and become follower
+    // Si term > currentTerm, mettre à jour et devenir suiveur
     if (req.term > this.currentTerm) {
       this.currentTerm = req.term;
       this.state = NodeState.FOLLOWER;
       this.votedFor = null;
     }
 
-    // Grant vote if:
-    // 1. We haven't voted this term, OR
-    // 2. We voted for this candidate
-    // AND candidate's log is at least as up-to-date as ours
+    // Accorder le vote si :
+    // 1. Nous n'avons pas voté ce terme, OU
+    // 2. Nous avons voté pour ce candidat
+    // ET le journal du candidat est au moins aussi à jour que le nôtre
     const logOk = req.lastLogTerm > this.getLastLogTerm() ||
       (req.lastLogTerm === this.getLastLogTerm() && req.lastLogIndex >= this.log.length);
 
@@ -401,28 +401,28 @@ export class RaftNode {
   }
 
   /**
-   * Handle AppendEntries RPC
+   * Gérer le RPC AppendEntries
    */
   handleAppendEntries(req: AppendEntriesRequest): AppendEntriesResponse {
-    // If term < currentTerm, reject
+    // Si term < currentTerm, rejeter
     if (req.term < this.currentTerm) {
       return { term: this.currentTerm, success: false };
     }
 
-    // Recognize leader
+    // Reconnaître le leader
     this.leaderId = req.leaderId;
 
-    // If term > currentTerm, update and become follower
+    // Si term > currentTerm, mettre à jour et devenir suiveur
     if (req.term > this.currentTerm) {
       this.currentTerm = req.term;
       this.state = NodeState.FOLLOWER;
       this.votedFor = null;
     }
 
-    // Reset election timeout
+    // Réinitialiser le délai d'élection
     this.resetElectionTimeout();
 
-    // Check log consistency
+    // Vérifier la cohérence du journal
     if (req.prevLogIndex > 0) {
       if (this.log.length < req.prevLogIndex) {
         return { term: this.currentTerm, success: false };
@@ -434,7 +434,7 @@ export class RaftNode {
       }
     }
 
-    // Append new entries
+    // Ajouter de nouvelles entrées
     if (req.entries.length > 0) {
       let insertIndex = req.prevLogIndex;
       for (const entry of req.entries) {
@@ -444,7 +444,7 @@ export class RaftNode {
             insertIndex++;
             continue;
           }
-          // Conflict! Delete from here
+          // Conflit ! Supprimer à partir d'ici
           this.log = this.log.slice(0, insertIndex);
         }
         this.log.push(entry);
@@ -452,7 +452,7 @@ export class RaftNode {
       }
     }
 
-    // Update commit index
+    // Mettre à jour l'index de validation
     if (req.leaderCommit > this.commitIndex) {
       this.commitIndex = Math.min(req.leaderCommit, this.log.length);
       this.applyCommittedEntries();
@@ -461,10 +461,10 @@ export class RaftNode {
     return { term: this.currentTerm, success: true };
   }
 
-  // ========== Private Methods ==========
+  // ========== Méthodes Privées ==========
 
   /**
-   * Start election (convert to candidate)
+   * Démarrer l'élection (convertir en candidat)
    */
   private startElection(): void {
     this.state = NodeState.CANDIDATE;
@@ -472,9 +472,9 @@ export class RaftNode {
     this.votedFor = this.config.nodeId;
     this.leaderId = null;
 
-    console.log(`[Node ${this.config.nodeId}] Starting election for term ${this.currentTerm}`);
+    console.log(`[Nœud ${this.config.nodeId}] Démarrage de l'élection pour le terme ${this.currentTerm}`);
 
-    // Request votes from peers
+    // Demander les votes des pairs
     const req: RequestVoteRequest = {
       term: this.currentTerm,
       candidateId: this.config.nodeId,
@@ -482,7 +482,7 @@ export class RaftNode {
       lastLogTerm: this.getLastLogTerm()
     };
 
-    let votesReceived = 1; // Vote for self
+    let votesReceived = 1; // Vote pour soi-même
     const majority = Math.floor(this.config.peerIds.length / 2) + 1;
 
     for (const peerId of this.config.peerIds) {
@@ -498,34 +498,34 @@ export class RaftNode {
           this.votedFor = null;
         }
       }).catch(() => {
-        // Peer unavailable, ignore
+        // Pair indisponible, ignorer
       });
     }
 
-    // Reset election timeout for next round
+    // Réinitialiser le délai d'élection pour le prochain tour
     this.resetElectionTimeout();
   }
 
   /**
-   * Become leader after winning election
+   * Devenir leader après avoir gagné l'élection
    */
   private becomeLeader(): void {
     this.state = NodeState.LEADER;
     this.leaderId = this.config.nodeId;
-    console.log(`[Node ${this.config.nodeId}] Became leader for term ${this.currentTerm}`);
+    console.log(`[Nœud ${this.config.nodeId}] Devient leader pour le terme ${this.currentTerm}`);
 
-    // Initialize leader state
+    // Initialiser l'état du leader
     for (const peerId of this.config.peerIds) {
       this.nextIndex.set(peerId, this.log.length + 1);
       this.matchIndex.set(peerId, 0);
     }
 
-    // Start sending heartbeats
+    // Commencer à envoyer des battements de cœur
     this.startHeartbeats();
   }
 
   /**
-   * Send heartbeats to all followers
+   * Envoyer des battements de cœur à tous les suiveurs
    */
   private startHeartbeats(): void {
     if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
@@ -538,7 +538,7 @@ export class RaftNode {
   }
 
   /**
-   * Replicate log to followers (also sends heartbeats)
+   * Répliquer le journal aux suiveurs (envoie aussi les battements de cœur)
    */
   private replicateLog(): void {
     if (this.state !== NodeState.LEADER) return;
@@ -579,13 +579,13 @@ export class RaftNode {
           this.nextIndex.set(followerId, Math.max(1, currentNext - 1));
         }
       }).catch(() => {
-        // Follower unavailable, will retry
+        // Suiveur indisponible, réessayera
       });
     }
   }
 
   /**
-   * Update commit index if majority has entry
+   * Mettre à jour l'index de validation si la majorité a l'entrée
    */
   private updateCommitIndex(): void {
     if (this.state !== NodeState.LEADER) return;
@@ -596,7 +596,7 @@ export class RaftNode {
     for (let i = N; i > this.commitIndex; i--) {
       if (this.log[i - 1].term !== this.currentTerm) continue;
 
-      let count = 1; // Leader has it
+      let count = 1; // Le leader l'a
       for (const matchIdx of this.matchIndex.values()) {
         if (matchIdx >= i) count++;
       }
@@ -610,7 +610,7 @@ export class RaftNode {
   }
 
   /**
-   * Apply committed entries to state machine
+   * Appliquer les entrées validées à la machine à états
    */
   private applyCommittedEntries(): void {
     while (this.lastApplied < this.commitIndex) {
@@ -621,7 +621,7 @@ export class RaftNode {
   }
 
   /**
-   * Wait for an entry to be committed
+   * Attendre qu'une entrée soit validée
    */
   private async waitForCommit(index: number): Promise<void> {
     return new Promise((resolve) => {
@@ -637,7 +637,7 @@ export class RaftNode {
   }
 
   /**
-   * Reset election timeout with random value
+   * Réinitialiser le délai d'élection avec une valeur aléatoire
    */
   private resetElectionTimeout(): void {
     if (this.electionTimer) clearTimeout(this.electionTimer);
@@ -661,7 +661,7 @@ export class RaftNode {
     return this.log[this.log.length - 1].term;
   }
 
-  // ========== Network Layer (simplified) ==========
+  // ========== Couche Réseau (simplifiée) ==========
 
   private async sendRequestVote(peerId: string, req: RequestVoteRequest): Promise<RequestVoteResponse> {
     const url = `http://${peerId}/raft/request-vote`;
@@ -675,7 +675,7 @@ export class RaftNode {
     return response.data;
   }
 
-  // ========== Debug Methods ==========
+  // ========== Méthodes de Débogage ==========
 
   getState() {
     return {
@@ -702,7 +702,7 @@ export function createServer(node: RaftNode, port: number): express.Application 
   const app = express();
   app.use(express.json());
 
-  // Raft RPC endpoints
+  // Points de terminaison RPC Raft
   app.post('/raft/request-vote', (req, res) => {
     const response = node.handleRequestVote(req.body);
     res.json(response);
@@ -713,7 +713,7 @@ export function createServer(node: RaftNode, port: number): express.Application 
     res.json(response);
   });
 
-  // Client API endpoints
+  // Points de terminaison API Client
   app.get('/kv/:key', (req, res) => {
     const command: Command = { type: 'GET', key: req.params.key };
     node.submitCommand(command)
@@ -735,7 +735,7 @@ export function createServer(node: RaftNode, port: number): express.Application 
       .catch(err => res.status(500).json({ error: err.message }));
   });
 
-  // Debug endpoint
+  // Point de terminaison de débogage
   app.get('/debug', (req, res) => {
     res.json(node.getState());
   });
@@ -766,8 +766,8 @@ node.start();
 
 const app = createServer(node, PORT);
 app.listen(PORT, () => {
-  console.log(`Node ${NODE_ID} listening on port ${PORT}`);
-  console.log(`Peers: ${PEER_IDS.join(', ')}`);
+  console.log(`Nœud ${NODE_ID} écoute sur le port ${PORT}`);
+  console.log(`Pairs : ${PEER_IDS.join(', ')}`);
 });
 ```
 
@@ -828,20 +828,20 @@ CMD ["npm", "start"]
 
 ---
 
-## Complete Python Implementation
+## Implémentation Complète Python
 
-### Project Structure
+### Structure du Projet
 
 ```
 python-raft/
 ├── requirements.txt
 ├── src/
-│   ├── types.py              # Shared types
-│   ├── state_machine.py      # KV store state machine
-│   ├── raft_node.py          # Complete Raft implementation
-│   ├── server.py             # Flask API server
+│   ├── types.py              # Types partagés
+│   ├── state_machine.py      # Machine à états de magasin CV
+│   ├── raft_node.py          # Implémentation Raft complète
+│   ├── server.py             # Serveur API Flask
 │   └── __init__.py
-├── app.py                    # Entry point
+├── app.py                    # Point d'entrée
 └── docker-compose.yml
 ```
 
@@ -924,42 +924,42 @@ import json
 from .types import LogEntry
 
 class KVStoreStateMachine:
-    """Key-Value Store State Machine"""
+    """Machine à États de Magasin Clé-Valeur"""
 
     def __init__(self):
         self.data: Dict[str, str] = {}
 
     def apply(self, entry: LogEntry) -> None:
-        """Apply a committed log entry to the state machine"""
+        """Appliquer une entrée de journal validée à la machine à états"""
         try:
             command = json.loads(entry.command)
 
             if command['type'] == 'SET':
                 self.data[command['key']] = command['value']
-                print(f"[State Machine] SET {command['key']} = {command['value']}")
+                print(f"[Machine à États] SET {command['key']} = {command['value']}")
 
             elif command['type'] == 'DELETE':
                 if command['key'] in self.data:
                     del self.data[command['key']]
-                    print(f"[State Machine] DELETE {command['key']}")
+                    print(f"[Machine à États] DELETE {command['key']}")
 
             elif command['type'] == 'GET':
-                # Read-only, no state change
+                # Lecture seule, pas de changement d'état
                 pass
 
         except Exception as e:
-            print(f"[State Machine] Failed to apply entry: {e}")
+            print(f"[Machine à États] Échec de l'application de l'entrée : {e}")
 
     def get(self, key: str) -> Optional[str]:
-        """Get a value from the state machine"""
+        """Obtenir une valeur de la machine à états"""
         return self.data.get(key)
 
     def get_all(self) -> Dict[str, str]:
-        """Get all key-value pairs"""
+        """Obtenir toutes les paires clé-valeur"""
         return dict(self.data)
 
     def clear(self) -> None:
-        """Clear the state machine (for testing)"""
+        """Effacer la machine à états (pour les tests)"""
         self.data.clear()
 ```
 
@@ -999,18 +999,18 @@ class RaftNode:
         self.config = config
         self.state_machine = KVStoreStateMachine()
 
-        # Persistent state
+        # État persistant
         self.current_term = 0
         self.voted_for: Optional[str] = None
         self.log: List[LogEntry] = []
 
-        # Volatile state
+        # État volatil
         self.commit_index = 0
         self.last_applied = 0
         self.state = NodeState.FOLLOWER
         self.leader_id: Optional[str] = None
 
-        # Leader state
+        # État du leader
         self.next_index: Dict[str, int] = {}
         self.match_index: Dict[str, int] = {}
 
@@ -1018,22 +1018,22 @@ class RaftNode:
         self.election_task: Optional[asyncio.Task] = None
         self.heartbeat_task: Optional[asyncio.Task] = None
 
-    # ========== Public API ==========
+    # ========== API Publique ==========
 
     async def submit_command(self, command: Command) -> any:
-        """Client: Submit a command to the cluster"""
+        """Client : Soumettre une commande au cluster"""
 
-        # Redirect to leader if not leader
+        # Rediriger vers le leader si pas leader
         if self.state != NodeState.LEADER:
             if self.leader_id:
-                raise Exception(f"Not a leader. Please redirect to {self.leader_id}")
-            raise Exception("No leader known. Please retry.")
+                raise Exception(f"Pas un leader. Veuillez rediriger vers {self.leader_id}")
+            raise Exception("Aucun leader connu. Veuillez réessayer.")
 
-        # Handle GET commands (read-only)
+        # Gérer les commandes GET (lecture seule)
         if command.type == 'GET':
             return self.state_machine.get(command.key)
 
-        # Append to local log
+        # Ajouter au journal local
         entry = LogEntry(
             index=len(self.log) + 1,
             term=self.current_term,
@@ -1041,33 +1041,33 @@ class RaftNode:
         )
         self.log.append(entry)
 
-        # Replicate to followers
+        # Répliquer aux suiveurs
         await self.replicate_log()
 
-        # Wait for commit
+        # Attendre la validation
         await self._wait_for_commit(entry.index)
 
-        # Return result
+        # Retourner le résultat
         if command.type == 'SET':
             return {"key": command.key, "value": command.value}
         elif command.type == 'DELETE':
             return {"key": command.key, "deleted": True}
 
     def start(self):
-        """Start the node"""
+        """Démarrer le nœud"""
         asyncio.create_task(self._election_loop())
 
     def stop(self):
-        """Stop the node"""
+        """Arrêter le nœud"""
         if self.election_task:
             self.election_task.cancel()
         if self.heartbeat_task:
             self.heartbeat_task.cancel()
 
-    # ========== RPC Handlers ==========
+    # ========== Gestionnaires RPC ==========
 
     def handle_request_vote(self, req: RequestVoteRequest) -> RequestVoteResponse:
-        """Handle RequestVote RPC"""
+        """Gérer le RPC RequestVote"""
 
         if req.term < self.current_term:
             return RequestVoteResponse(term=self.current_term, vote_granted=False)
@@ -1090,12 +1090,12 @@ class RaftNode:
         return RequestVoteResponse(term=self.current_term, vote_granted=False)
 
     def handle_append_entries(self, req: AppendEntriesRequest) -> AppendEntriesResponse:
-        """Handle AppendEntries RPC"""
+        """Gérer le RPC AppendEntries"""
 
         if req.term < self.current_term:
             return AppendEntriesResponse(term=self.current_term, success=False)
 
-        # Recognize leader
+        # Reconnaître le leader
         self.leader_id = req.leader_id
 
         if req.term > self.current_term:
@@ -1103,7 +1103,7 @@ class RaftNode:
             self.state = NodeState.FOLLOWER
             self.voted_for = None
 
-        # Check log consistency
+        # Vérifier la cohérence du journal
         if req.prev_log_index > 0:
             if len(self.log) < req.prev_log_index:
                 return AppendEntriesResponse(term=self.current_term, success=False)
@@ -1112,7 +1112,7 @@ class RaftNode:
             if prev_entry.term != req.prev_log_term:
                 return AppendEntriesResponse(term=self.current_term, success=False)
 
-        # Append new entries
+        # Ajouter de nouvelles entrées
         if req.entries:
             insert_index = req.prev_log_index
             for entry in req.entries:
@@ -1125,17 +1125,17 @@ class RaftNode:
                 self.log.append(entry)
                 insert_index += 1
 
-        # Update commit index
+        # Mettre à jour l'index de validation
         if req.leader_commit > self.commit_index:
             self.commit_index = min(req.leader_commit, len(self.log))
             self._apply_committed_entries()
 
         return AppendEntriesResponse(term=self.current_term, success=True)
 
-    # ========== Private Methods ==========
+    # ========== Méthodes Privées ==========
 
     async def _election_loop(self):
-        """Election timeout loop"""
+        """Boucle de délai d'élection"""
         while True:
             timeout = self._random_timeout()
             await asyncio.sleep(timeout / 1000)
@@ -1144,13 +1144,13 @@ class RaftNode:
                 await self._start_election()
 
     async def _start_election(self):
-        """Start election (convert to candidate)"""
+        """Démarrer l'élection (convertir en candidat)"""
         self.state = NodeState.CANDIDATE
         self.current_term += 1
         self.voted_for = self.config.nodeId
         self.leader_id = None
 
-        print(f"[Node {self.config.nodeId}] Starting election for term {self.current_term}")
+        print(f"[Nœud {self.config.nodeId}] Démarrage de l'élection pour le terme {self.current_term}")
 
         req = RequestVoteRequest(
             term=self.current_term,
@@ -1159,7 +1159,7 @@ class RaftNode:
             last_log_term=self._get_last_log_term()
         )
 
-        votes_received = 1  # Vote for self
+        votes_received = 1  # Vote pour soi-même
         majority = len(self.config.peer_ids) // 2 + 1
 
         tasks = []
@@ -1180,27 +1180,27 @@ class RaftNode:
                     self.voted_for = None
 
     def _become_leader(self):
-        """Become leader after winning election"""
+        """Devenir leader après avoir gagné l'élection"""
         self.state = NodeState.LEADER
         self.leader_id = self.config.nodeId
-        print(f"[Node {self.config.nodeId}] Became leader for term {self.current_term}")
+        print(f"[Nœud {self.config.nodeId}] Devient leader pour le terme {self.current_term}")
 
-        # Initialize leader state
+        # Initialiser l'état du leader
         for peer_id in self.config.peer_ids:
             self.next_index[peer_id] = len(self.log) + 1
             self.match_index[peer_id] = 0
 
-        # Start heartbeats
+        # Démarrer les battements de cœur
         asyncio.create_task(self._heartbeat_loop())
 
     async def _heartbeat_loop(self):
-        """Send heartbeats to followers"""
+        """Envoyer des battements de cœur aux suiveurs"""
         while self.state == NodeState.LEADER:
             await self.replicate_log()
             await asyncio.sleep(self.config.heartbeat_interval / 1000)
 
     async def replicate_log(self):
-        """Replicate log to followers"""
+        """Répliquer le journal aux suiveurs"""
         if self.state != NodeState.LEADER:
             return
 
@@ -1234,7 +1234,7 @@ class RaftNode:
                     return
 
                 if result.success:
-                    last_index = self.log[len(self.log) - 1].index if self.log else 0
+                    last_index = len(self.log) if self.log else 0
                     self.match_index[follower_id] = last_index
                     self.next_index[follower_id] = last_index + 1
                     await self._update_commit_index()
@@ -1243,7 +1243,7 @@ class RaftNode:
                     self.next_index[follower_id] = max(1, current_next - 1)
 
     async def _update_commit_index(self):
-        """Update commit index if majority has entry"""
+        """Mettre à jour l'index de validation si la majorité a l'entrée"""
         if self.state != NodeState.LEADER:
             return
 
@@ -1254,7 +1254,7 @@ class RaftNode:
             if self.log[i - 1].term != self.current_term:
                 continue
 
-            count = 1  # Leader has it
+            count = 1  # Le leader l'a
             for match_idx in self.match_index.values():
                 if match_idx >= i:
                     count += 1
@@ -1265,34 +1265,34 @@ class RaftNode:
                 break
 
     def _apply_committed_entries(self):
-        """Apply committed entries to state machine"""
+        """Appliquer les entrées validées à la machine à états"""
         while self.last_applied < self.commit_index:
             self.last_applied += 1
             entry = self.log[self.last_applied - 1]
             self.state_machine.apply(entry)
 
     async def _wait_for_commit(self, index: int):
-        """Wait for an entry to be committed"""
+        """Attendre qu'une entrée soit validée"""
         while self.commit_index < index:
             await asyncio.sleep(0.05)
 
     def _random_timeout(self) -> int:
-        """Generate random election timeout"""
+        """Générer un délai d'élection aléatoire"""
         return random.randint(
             self.config.election_timeout_min,
             self.config.election_timeout_max
         )
 
     def _get_last_log_term(self) -> int:
-        """Get the term of the last log entry"""
+        """Obtenir le terme de la dernière entrée de journal"""
         if not self.log:
             return 0
         return self.log[-1].term
 
-    # ========== Network Layer ==========
+    # ========== Couche Réseau ==========
 
     async def _send_request_vote(self, peer_id: str, req: RequestVoteRequest) -> RequestVoteResponse:
-        """Send RequestVote RPC to peer"""
+        """Envoyer le RPC RequestVote au pair"""
         url = f"http://{peer_id}/raft/request-vote"
         try:
             response = requests.post(url, json=req.__dict__, timeout=1)
@@ -1301,7 +1301,7 @@ class RaftNode:
             return RequestVoteResponse(term=self.current_term, vote_granted=False)
 
     async def _send_append_entries(self, peer_id: str, req: AppendEntriesRequest) -> AppendEntriesResponse:
-        """Send AppendEntries RPC to peer"""
+        """Envoyer le RPC AppendEntries au pair"""
         url = f"http://{peer_id}/raft/append-entries"
         try:
             data = {
@@ -1317,10 +1317,10 @@ class RaftNode:
         except:
             return AppendEntriesResponse(term=self.current_term, success=False)
 
-    # ========== Debug Methods ==========
+    # ========== Méthodes de Débogage ==========
 
     def get_state(self) -> dict:
-        """Get node state for debugging"""
+        """Obtenir l'état du nœud pour le débogage"""
         return {
             'nodeId': self.config.nodeId,
             'state': self.state.value,
@@ -1341,7 +1341,7 @@ from .raft_node import RaftNode, ClusterConfig
 def create_server(node: RaftNode):
     app = Flask(__name__)
 
-    # Raft RPC endpoints
+    # Points de terminaison RPC Raft
     @app.route('/raft/request-vote', methods=['POST'])
     def request_vote():
         response = node.handle_request_vote(
@@ -1351,7 +1351,7 @@ def create_server(node: RaftNode):
 
     @app.route('/raft/append-entries', methods=['POST'])
     def append_entries():
-        # Convert request to proper format
+        # Convertir la requête au format approprié
         data = request.json
         entries = [LogEntry(**e) for e in data.get('entries', [])]
         req = AppendEntriesRequest(
@@ -1365,7 +1365,7 @@ def create_server(node: RaftNode):
         response = node.handle_append_entries(req)
         return jsonify(response.__dict__)
 
-    # Client API endpoints
+    # Points de terminaison API Client
     @app.route('/kv/<key>', methods=['GET'])
     def get_key(key):
         command = GetCommand(key=key)
@@ -1393,7 +1393,7 @@ def create_server(node: RaftNode):
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
-    # Debug endpoint
+    # Point de terminaison de débogage
     @app.route('/debug', methods=['GET'])
     def debug():
         return jsonify(node.get_state())
@@ -1483,104 +1483,108 @@ CMD ["gunicorn", "-b", "0.0.0.0:5000", "app:app"]
 
 ---
 
-## Running the System
+## Exécution du Système
 
 ### TypeScript
 
 ```bash
-# Build
+# Construire
 npm run build
 
-# Run with Docker Compose
+# Exécuter avec Docker Compose
 docker-compose up
 
-# Test the cluster
+# Tester le cluster
 curl -X POST http://localhost:3001/kv -H "Content-Type: application/json" -d '{"key":"foo","value":"bar"}'
 curl http://localhost:3001/kv/foo
-curl http://localhost:3002/debug  # Check node state
+curl http://localhost:3002/debug  # Vérifier l'état du nœud
 ```
 
 ### Python
 
 ```bash
-# Run with Docker Compose
+# Exécuter avec Docker Compose
 docker-compose up
 
-# Test the cluster
+# Tester le cluster
 curl -X POST http://localhost:5001/kv -H "Content-Type: application/json" -d '{"key":"foo","value":"bar"}'
 curl http://localhost:5001/kv/foo
-curl http://localhost:5002/debug  # Check node state
+curl http://localhost:5002/debug  # Vérifier l'état du nœud
 ```
 
 ---
 
-## Exercises
+## Exercices
 
-### Exercise 1: Basic Operations
-1. Start the 3-node cluster
-2. Wait for leader election
-3. SET key=value on the leader
-4. GET the key from all nodes
-5. Verify all nodes return the same value
+### Exercice 1 : Opérations de Base
 
-**Expected Result:** All nodes return the committed value.
+1. Démarrer le cluster à 3 nœuds
+2. Attendre l'élection du leader
+3. SET key=value sur le leader
+4. GET la clé de tous les nœuds
+5. Vérifier que tous les nœuds retournent la même valeur
 
-### Exercise 2: Leader Failover
-1. Start the cluster and write some data
-2. Kill the leader container
-3. Observe a new leader being elected
-4. Continue writing data
-4. Restart the old leader
-5. Verify it catches up
+**Résultat Attendu :** Tous les nœuds retournent la valeur validée.
 
-**Expected Result:** System continues operating with new leader, old leader rejoins as follower.
+### Exercice 2 : Bascullement de Leader
 
-### Exercise 3: Network Partition
-1. Start a 5-node cluster
-2. Isolate 2 nodes (simulate partition)
-3. Verify majority (3 nodes) can still commit
-4. Heal the partition
-5. Verify isolated nodes catch up
+1. Démarrer le cluster et écrire des données
+2. Tuer le conteneur leader
+3. Observer un nouveau leader être élu
+4. Continuer à écrire des données
+5. Redémarrer l'ancien leader
+6. Vérifier qu'il rattrape
 
-**Expected Result:** Majority side continues, minority cannot commit, rejoin works.
+**Résultat Attendu :** Le système continue à fonctionner avec le nouveau leader, l'ancien leader rejoint en tant que suiveur.
 
-### Exercise 4: Persistence Test
-1. Write data to the cluster
-2. Stop all nodes
-3. Restart all nodes
-4. Verify data is recovered
+### Exercice 3 : Partition Réseau
 
-**Expected Result:** All data survives restart.
+1. Démarrer un cluster à 5 nœuds
+2. Isoler 2 nœuds (simuler une partition)
+3. Vérifier que la majorité (3 nœuds) peut encore valider
+4. Guérir la partition
+5. Vérifier que les nœuds isolés rattrapent
+
+**Résultat Attendu :** Le côté majorité continue, la minorité ne peut pas valider, la rejointe fonctionne.
+
+### Exercice 4 : Test de Persistance
+
+1. Écrire des données dans le cluster
+2. Arrêter tous les nœuds
+3. Redémarrer tous les nœuds
+4. Vérifier que les données sont récupérées
+
+**Résultat Attendu :** Toutes les données survivent au redémarrage.
 
 ---
 
-## Common Pitfalls
+## Pièges Courants
 
-| Pitfall | Symptom | Solution |
+| Piège | Symptôme | Solution |
 |---------|---------|----------|
-| Reading from followers | Stale reads | Always read from leader or implement lease reads |
-| No heartbeats | Unnecessary elections | Ensure heartbeat timer runs continuously |
-| Client timeout | Failed writes | Wait for commit, don't return immediately |
-| Split brain | Multiple leaders | Randomized timeouts + voting rules prevent this |
+| Lire à partir des suiveurs | Lectures stalées | Toujours lire à partir du leader ou implémenter des lectures avec bail |
+| Pas de battements de cœur | Élections inutiles | S'assurer que le timer de battement de cœur fonctionne continuellement |
+| Délai d'attente du client | Écritures échouées | Attendre la validation, ne pas retourner immédiatement |
+| Split brain | Leaders multiples | Les délais randomisés + les règles de vote empêchent cela |
 
 ---
 
-## Key Takeaways
+## Points Clés à Retenir
 
-1. **Complete Raft** combines leader election + log replication for consensus
-2. **State machine** applies committed commands deterministically
-3. **Client API** provides transparent access to the distributed system
-4. **Failover** is automatic - new leader elected when old one fails
-5. **Safety** guarantees ensure no conflicting commits
+1. **Raft Complet** combine l'élection de leader + la réplication de journal pour le consensus
+2. **La machine à états** applique les commandes validées de manière déterministe
+3. **L'API client** fournit un accès transparent au système distribué
+4. **Le basculement** est automatique - un nouveau leader est élu quand l'ancien échoue
+5. **La sécurité** garantit assure qu'il n'y a pas d'écritures conflictuelles
 
 ---
 
-**Congratulations!** You've completed the Consensus System. You now understand one of the hardest concepts in distributed systems!
+**Félicitations !** Vous avez complété le Système de Consensus. Vous comprenez maintenant l'un des concepts les plus difficiles des systèmes distribués !
 
-**Next:** Reference Materials →
+**Suite :** Matériels de Référence →
 
-## 🧠 Chapter Quiz
+## 🧠 Quiz du Chapitre
 
-Test your mastery of these concepts! These questions will challenge your understanding and reveal any gaps in your knowledge.
+Testez votre maîtrise de ces concepts ! Ces questions défieront votre compréhension et révéleront les lacunes dans vos connaissances.
 
 {{#quiz ../../quizzes/consensus-consensus-system.toml}}

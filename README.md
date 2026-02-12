@@ -1,74 +1,74 @@
-# Distributed Systems Course
+# Cours de Systèmes Distribués (Distributed Systems Course)
 
-A comprehensive course on distributed systems from fundamentals to consensus, implemented with mdBook.
+Un cours complet sur les systèmes distribués, des fondamentaux au consensus, implémenté avec mdBook.
 
-## Author
+## Auteur
 
 **Mohamed Dardouri**
 
 - Email: [email protected]
-- Website: [https://med.dardouri.com](https://med.dardouri.com)
-- LinkedIn: [linkedin.com/in/dardourimohamed](https://linkedin.com/in/dardourimohamed)
-- X/Twitter: [@DardouriMohamed](https://x.com/DardouriMohamed)
+- Site Web : [https://med.dardouri.com](https://med.dardouri.com)
+- LinkedIn : [linkedin.com/in/dardourimohamed](https://linkedin.com/in/dardourimohamed)
+- X/Twitter : [@DardouriMohamed](https://x.com/DardouriMohamed)
 
-## Quick Start
+## Démarrage Rapide
 
-### Prerequisites
+### Prérequis
 
-1. Install [mdBook](https://rust-lang.github.io/mdBook/guide/installation.html):
+1. Installez [mdBook](https://rust-lang.github.io/mdBook/guide/installation.html) :
    ```bash
    cargo install mdbook
    cargo install mdbook-mermaid
    ```
 
-2. Install [Docker](https://docs.docker.com/get-docker/) and Docker Compose
+2. Installez [Docker](https://docs.docker.com/get-docker/) et Docker Compose
 
-### Build the Book
+### Construire le Livre
 
 ```bash
 cd distributed-systems-course
 mdbook build
-mdbook serve  # Preview at http://localhost:3000
+mdbook serve  # Aperçu sur http://localhost:3000
 ```
 
-## Course Structure
+## Structure du Cours
 
-This course consists of 10 sessions (15 hours total) covering:
+Ce cours consiste en 10 sessions (15 heures au total) couvrant :
 
-| Part | Sessions | Topics |
-|------|----------|--------|
-| I | 1-2 | Queue/Work System - Producer-consumer, message passing |
-| II | 3-5 | Store with Replication - CAP, leader election, consistency |
-| III | 6-7 | Chat System - WebSockets, pub/sub, message ordering |
-| IV | 8-10 | Consensus System - Raft algorithm, log replication |
+| Partie | Sessions | Sujets |
+|-------|----------|--------|
+| I | 1-2 | Système de File/Travail (Queue/Work) - Producteur-consommateur, passage de messages |
+| II | 3-5 | Magasin avec Réplication - CAP, élection de leader, cohérence |
+| III | 6-7 | Système de Chat - WebSockets, pub/sub, ordonnancement des messages |
+| IV | 8-10 | Système de Consensus - Algorithme Raft, réplication de journal |
 
-## Code Examples
+## Exemples de Code
 
-All examples include **both TypeScript and Python** implementations. Each session includes:
-- Concept explanation with diagrams
-- Working code examples
-- Docker Compose deployment
-- Hands-on exercises
+Tous les exemples incluent **à la fois des implémentations en TypeScript et en Python**. Chaque session comprend :
+- Explication des concepts avec diagrammes
+- Exemples de code fonctionnels
+- Déploiement Docker Compose
+- Exercices pratiques
 
-## Directory Layout
+## Organisation des Répertoires
 
 ```
 distributed-systems-course/
-├── book.toml              # mdBook configuration
-├── src/                   # Course content
-│   ├── SUMMARY.md         # Table of contents
+├── book.toml              # Configuration mdBook
+├── src/                   # Contenu du cours
+│   ├── SUMMARY.md         # Table des matières
 │   ├── fundamentals/      # Sessions 1-2
 │   ├── data-store/        # Sessions 3-5
 │   ├── real-time/         # Sessions 6-7
 │   ├── consensus/         # Sessions 8-10
-│   └── reference/         # Reference materials
-└── examples/              # Docker Compose examples
+│   └── reference/         # Matériels de référence
+└── examples/              # Exemples Docker Compose
     ├── 01-queue/
     ├── 02-store/
     ├── 03-chat/
     └── 04-consensus/
 ```
 
-## License
+## Licence
 
-MIT License - see LICENSE file for details
+Licence MIT - voir le fichier LICENSE pour les détails

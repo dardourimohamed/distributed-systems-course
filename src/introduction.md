@@ -1,82 +1,82 @@
-# Distributed Systems Course
+# Cours de Systèmes Distribués
 
-Welcome to the Distributed Systems Course! This course will take you from foundational concepts to building a working consensus-based system.
+Bienvenue dans le Cours de Systèmes Distribués ! Ce cours vous guidera des concepts fondamentaux jusqu'à la construction d'un système fonctionnel basé sur le consensus.
 
-## Why Learn Distributed Systems?
+## Pourquoi Apprendre les Systèmes Distribués ?
 
-Distributed systems are everywhere. Every time you use a modern web service, you're interacting with a distributed system:
+Les systèmes distribués sont partout. Chaque fois que vous utilisez un service web moderne, vous interagissez avec un système distribué :
 
-- **Social media platforms** handling billions of users
-- **E-commerce sites** processing millions of transactions
-- **Streaming services** delivering content globally
-- **Cloud databases** storing and replicating data across continents
+- **Plateformes de médias sociaux** gérant des milliards d'utilisateurs
+- **Sites de commerce électronique** traitant des millions de transactions
+- **Services de streaming** diffusant du contenu à l'échelle mondiale
+- **Bases de données cloud** stockant et répliquant des données à travers les continents
 
-Understanding distributed systems is essential for building scalable, reliable applications.
+Comprendre les systèmes distribués est essentiel pour construire des applications évolutives et fiables.
 
-## Course Overview
+## Aperçu du Cours
 
-This course teaches distributed systems concepts through hands-on implementation. Over 10 sessions, you will build four progressively complex distributed applications:
+Ce cours enseigne les concepts des systèmes distribués à travers une mise en œuvre pratique. Sur 10 sessions, vous construirez quatre applications distribuées de complexité croissante :
 
 | Application | Sessions | Concepts |
 |-------------|----------|----------|
-| Queue/Work System | 1-2 | Producer-consumer, message passing, fault tolerance |
-| Store with Replication | 3-5 | Partitioning, CAP theorem, leader election, consistency |
-| Chat System | 6-7 | WebSockets, pub/sub, message ordering |
-| Consensus System | 8-10 | Raft algorithm, log replication, state machine |
+| Système File/Travail | 1-2 | Producteur-consommateur, passage de messages, tolérance aux pannes |
+| Magasin avec Réplication | 3-5 | Partitionnement, théorème CAP, élection de leader, cohérence |
+| Système de Chat | 6-7 | WebSockets, pub/sub, ordonnancement des messages |
+| Système de Consensus | 8-10 | Algorithme Raft, réplication de journal, machine à états |
 
-## What You'll Learn
+## Ce que Vous Apprendrez
 
-By the end of this course, you will be able to:
+À la fin de ce cours, vous serez capable de :
 
-1. **Explain** distributed systems concepts including CAP theorem, consistency models, and consensus
-2. **Build** a working message queue system with producer-consumer pattern
-3. **Implement** a replicated key-value store with leader election
-4. **Create** a real-time chat system with pub/sub messaging
-5. **Develop** a consensus-based system using the Raft algorithm
-6. **Deploy** all systems using Docker Compose on your local machine
+1. **Expliquer** les concepts des systèmes distribués y compris le théorème CAP, les modèles de cohérence et le consensus
+2. **Construire** un système de file d'attente fonctionnel avec le modèle producteur-consommateur
+3. **Implémenter** un magasin clé-valeur répliqué avec élection de leader
+4. **Créer** un système de chat en temps réel avec messagerie pub/sub
+5. **Développer** un système basé sur le consensus en utilisant l'algorithme Raft
+6. **Déployer** tous les systèmes en utilisant Docker Compose sur votre machine locale
 
-## Target Audience
+## Public Cible
 
-This course is designed for developers who:
+Ce cours est conçu pour les développeurs qui :
 
-- Have **basic programming experience** (functions, classes, basic OOP)
-- Are **new to distributed systems**
-- Want to understand **how modern distributed applications work**
-- Prefer **learning by doing** over pure theory
+- Ont une **expérience de base en programmation** (fonctions, classes, POO de base)
+- Sont **novices en systèmes distribués**
+- Veulent comprendre **comment fonctionnent les applications distribuées modernes**
+- Préfèrent **apprendre en pratiquant** plutôt que la théorie pure
 
-## Prerequisites
+## Prérequis
 
-- **Programming:** Comfortable with either TypeScript or Python
-- **Command Line:** Basic familiarity with terminal commands
-- **Docker:** We'll cover Docker setup in the [Docker Setup](./reference/docker-setup.md) section
+- **Programmation :** À l'aise avec TypeScript ou Python
+- **Ligne de Commande :** Familiarité de base avec les commandes du terminal
+- **Docker :** Nous couvrirons la configuration Docker dans la section [Configuration Docker](./reference/docker-setup.md)
 
-No prior distributed systems experience is required!
+Aucune expérience préalable en systèmes distribués n'est requise !
 
-## Course Progression
+## Progression du Cours
 
 ```mermaid
 graph TB
-    subgraph "Part I: Fundamentals"
-        A1[What is a DS?] --> A2[Message Passing]
-        A2 --> A3[Queue System]
+    subgraph "Partie I : Fondamentaux"
+        A1[Qu'est-ce qu'un SD ?] --> A2[Passage de Messages]
+        A2 --> A3[Système de File]
     end
 
-    subgraph "Part II: Data Store"
-        B1[Partitioning] --> B2[CAP Theorem]
-        B2 --> B3[Replication]
-        B3 --> B4[Consistency]
+    subgraph "Partie II : Magasin de Données"
+        B1[Partitionnement] --> B2[Théorème CAP]
+        B2 --> B3[Réplication]
+        B3 --> B4[Cohérence]
     end
 
-    subgraph "Part III: Real-Time"
+    subgraph "Partie III : Temps Réel"
         C1[WebSockets] --> C2[Pub/Sub]
-        C2 --> C3[Chat System]
+        C2 --> C3[Système de Chat]
     end
 
-    subgraph "Part IV: Consensus"
-        D1[What is Consensus?] --> D2[Raft Algorithm]
-        D2 --> D3[Leader Election]
-        D3 --> D4[Log Replication]
-        D4 --> D5[Consensus System]
+    subgraph "Partie IV : Consensus"
+        D1[Qu'est-ce que le Consensus ?] --> D2[Algorithme Raft]
+        D2 --> D3[Élection de Leader]
+        D3 --> D4[Réplication de Journal]
+        D4 --> D5[Système de Consensus]
     end
 
     A3 --> B1
@@ -84,34 +84,34 @@ graph TB
     C3 --> D1
 ```
 
-## Course Format
+## Format du Cours
 
-Each 1.5-hour session follows this structure:
+Chaque session de 1,5 heure suit cette structure :
 
 ```mermaid
 graph LR
-    A[Review<br/>5 min] --> B[Concept<br/>20 min]
-    B --> C[Diagram<br/>10 min]
-    C --> D[Demo<br/>15 min]
-    D --> E[Exercise<br/>25 min]
+    A[Révision<br/>5 min] --> B[Concept<br/>20 min]
+    B --> C[Diagramme<br/>10 min]
+    C --> D[Démonstration<br/>15 min]
+    D --> E[Exercice<br/>25 min]
     E --> F[Test<br/>10 min]
-    F --> G[Summary<br/>5 min]
+    F --> G[Résumé<br/>5 min]
 ```
 
-### Session Components
+### Composants de Session
 
-- **Concept Explanation:** Clear, beginner-friendly explanations of core concepts
-- **Visual Diagrams:** Mermaid diagrams showing architecture and data flow
-- **Live Demo:** Step-by-step code walkthrough
-- **Hands-on Exercise:** Practical exercises to reinforce learning
-- **Run & Test:** Verify your implementation works correctly
+- **Explication de Concept :** Des explications claires et adaptées aux débutants des concepts fondamentaux
+- **Diagrammes Visuels :** Des diagrammes Mermaid montrant l'architecture et le flux des données
+- **Démonstration en Direct :** Procédure pas à pas du code
+- **Exercice Pratique :** Exercices pratiques pour renforcer l'apprentissage
+- **Exécution et Test :** Vérifiez que votre implémentation fonctionne correctement
 
-## Code Examples
+## Exemples de Code
 
-Every concept includes implementations in **both TypeScript and Python**:
+Chaque concept inclut des implémentations en **TypeScript et Python** :
 
 ```typescript
-// TypeScript example
+// Exemple TypeScript
 interface Message {
   id: string;
   content: string;
@@ -119,54 +119,54 @@ interface Message {
 ```
 
 ```python
-# Python example
+# Exemple Python
 @dataclass
 class Message:
     id: str
     content: str
 ```
 
-Choose the language you're most comfortable with, or learn both!
+Choisissez le langage avec lequel vous êtes le plus à l'aise, ou apprenez les deux !
 
-## Before You Begin
+## Avant de Commencer
 
-### 1. Set Up Your Environment
+### 1. Configurez Votre Environnement
 
-Follow the [Docker Setup Guide](./reference/docker-setup.md) to install:
+Suivez le [Guide de Configuration Docker](./reference/docker-setup.md) pour installer :
 
-- Docker and Docker Compose
-- Your preferred programming language (TypeScript or Python)
+- Docker et Docker Compose
+- Votre langage de programmation préféré (TypeScript ou Python)
 
-### 2. Verify Your Installation
+### 2. Vérifiez Votre Installation
 
 ```bash
 docker --version
 docker-compose --version
 ```
 
-### 3. Choose Your Language
+### 3. Choisissez Votre Langage
 
-Decide whether you'll work with **TypeScript** or **Python** throughout the course. Both languages have complete examples for every concept.
+Décidez si vous travaillerez avec **TypeScript** ou **Python** tout au long du cours. Les deux langages ont des exemples complets pour chaque concept.
 
-## Learning Tips
+## Conseils d'Apprentissage
 
-- **Don't rush:** Each concept builds on the previous ones
-- **Run the code:** Follow along with the examples in your terminal
-- **Experiment:** Modify the code and see what happens
-- **Ask questions:** Use the troubleshooting guide when stuck
-- **Build in public:** Share your progress and learn from others
+- **Ne vous précipitez pas :** Chaque concept s'appuie sur les précédents
+- **Exécutez le code :** Suivez les exemples dans votre terminal
+- **Expérimentez :** Modifiez le code et observez ce qui se passe
+- **Posez des questions :** Utilisez le guide de dépannage quand vous êtes bloqué
+- **Construisez en public :** Partagez votre progression et apprenez des autres
 
-## What You'll Build
+## Ce que Vous Construirez
 
-By the end of this course, you'll have four working distributed systems:
+À la fin de ce cours, vous aurez quatre systèmes distribués fonctionnels :
 
-1. **Queue System** - A fault-tolerant task processing system
-2. **Replicated Store** - A key-value store with leader election
-3. **Chat System** - A real-time messaging system with presence
-4. **Consensus System** - A Raft-based distributed database
+1. **Système de File** - Un système de traitement des tâches tolérant aux pannes
+2. **Magasin Répliqué** - Un magasin clé-valeur avec élection de leader
+3. **Système de Chat** - Un système de messagerie en temps réel avec présence
+4. **Système de Consensus** - Une base de données distribuée basée sur Raft
 
-All systems run locally using Docker Compose—no cloud infrastructure required!
+Tous les systèmes fonctionnent localement en utilisant Docker Compose — aucune infrastructure cloud n'est requise !
 
-## Let's Get Started!
+## Commençons !
 
-Ready to dive in? Continue to [Chapter 1: What is a Distributed System?](./fundamentals/01-what-is-ds.md)
+Prêt à plonger ? Continuez vers [Chapitre 1 : Qu'est-ce qu'un Système Distribué ?](./fundamentals/01-what-is-ds.md)

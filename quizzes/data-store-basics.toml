@@ -1,14 +1,15 @@
 [[questions]]
 type = "MultipleChoice"
-prompt.prompt = "What's the critical drawback of in-memory key-value stores?"
-prompt.distractors = ["They're slow", "Data is lost on restart", "They can't store complex data"]
-answer.answer = "Data is lost on restart"
-context = "In-memory means no durability—process crash or restart loses all data. For persistence, you need disk writes or replication."
+prompt.prompt = "Quel est l'inconvénient critique des magasins clé-valeur en mémoire ?"
+prompt.distractors = ["Ils sont lents", "Les données sont perdues au redémarrage", "Ils ne peuvent pas stocker de données complexes"]
+answer.answer = "Les données sont perdues au redémarrage"
+context = "En mémoire signifie pas de durabilité — plantage du processus ou redémarrage perd toutes les données. Pour la persistance, vous avez besoin d'écritures sur disque ou de réplication."
 id = "39fab414-27c4-4d17-960c-9adc1d28d634"
 
 [[questions]]
 type = "ShortAnswer"
-prompt.prompt = "What operation creates a key if it doesn't exist, but returns an error if it already exists?"
+prompt.prompt = "Quelle opération crée une clé si elle n'existe pas, mais retourne une erreur si elle existe déjà ?"
 answer.answer = "compare-and-set"
-context = "CAS (Compare-And-Set) is a conditional write that only succeeds if a precondition is met. Prevents lost updates and race conditions."
+answer.alternatives = ["CAS", "compare and set", "comparer-et-définir"]
+context = "CAS (Compare-And-Set) est une écriture conditionnelle qui ne réussit que si une condition préalable est remplie. Empêche les mises à jour perdues et les conditions de course."
 id = "cef84063-93c5-44ac-9ab9-980bcba35901"

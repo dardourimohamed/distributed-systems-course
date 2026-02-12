@@ -1,14 +1,15 @@
 [[questions]]
 type = "MultipleChoice"
-prompt.prompt = "What's the key benefit of publish-subscribe messaging?"
-prompt.distractors = ["Faster processing", "Loose coupling between producers and consumers", "Simpler code"]
-answer.answer = "Loose coupling between producers and consumers"
-context = "Pub/Sub decouples producers from consumers. Publishers don't need to know who subscribes. Add new consumers without changing publishers!"
+prompt.prompt = "Quel est le principal avantage de la messagerie publier-s'abonner ?"
+prompt.distractors = ["Traitement plus rapide", "Faible couplage entre producteurs et consommateurs", "Code plus simple"]
+answer.answer = "Faible couplage entre producteurs et consommateurs"
+context = "Pub/Sub découple les producteurs des consommateurs. Les éditeurs n'ont pas besoin de savoir qui s'abonne. Ajoutez de nouveaux consommateurs sans changer les éditeurs !"
 id = "37386bce-8338-421a-bac6-efc81c09f861"
 
 [[questions]]
 type = "ShortAnswer"
-prompt.prompt = "What's a 'poison pill' message in a pub/sub system?"
-answer.answer = "message that repeatedly fails"
-context = "Poison pills (or dead letters) are messages that repeatedly fail processing. They're moved to a separate queue for inspection to prevent blocking the pipeline."
+prompt.prompt = "Qu'est-ce qu'un message 'pilule empoisonnée' dans un système pub/sub ?"
+answer.answer = "message qui échoue répétitivement"
+answer.alternatives = ["poison pill", "lettre morte", "dead letter"]
+context = "Les pilules empoisonnées (ou lettres mortes) sont des messages qui échouent répétitivement au traitement. Elles sont déplacées vers une file séparée pour inspection afin d'empêcher le blocage du pipeline."
 id = "a3287686-846c-4421-bfe7-c7d3ec9cafbc"

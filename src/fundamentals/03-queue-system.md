@@ -1,37 +1,37 @@
-# Queue System Implementation
+# Implémentation du Système de File
 
-> **Session 2** - Full session (90 minutes)
+> **Session 2** - Session complète (90 minutes)
 
-## Learning Objectives
+## Objectifs d'Apprentissage
 
-- [ ] Understand the producer-consumer pattern
-- [ ] Build a working queue system with concurrent workers
-- [ ] Implement fault tolerance with retry logic
-- [ ] Deploy and test the system using Docker Compose
+- [ ] Comprendre le modèle producteur-consommateur
+- [ ] Construire un système de file fonctionnel avec des workers concurrents
+- [ ] Implémenter la tolérance aux pannes avec une logique de nouvelle tentative
+- [ ] Déployer et tester le système avec Docker Compose
 
-## The Producer-Consumer Pattern
+## Le Modèle Producteur-Consommateur
 
-The **producer-consumer pattern** is a fundamental distributed systems pattern where:
-- **Producers** create and send tasks to a queue
-- **Queue** buffers tasks between producers and consumers
-- **Workers (consumers)** process tasks from the queue
+Le **modèle producteur-consommateur (producer-consumer pattern)** est un modèle fondamental des systèmes distribués où :
+- **Les Producteurs** créent et envoient des tâches à une file
+- **La File** met en tampon les tâches entre les producteurs et les consommateurs
+- **Les Workers (consommateurs)** traitent les tâches de la file
 
 ```mermaid
 graph TB
-    subgraph "Producers"
-        P1[Producer 1<br/>API Server]
-        P2[Producer 2<br/>Scheduler]
-        P3[Producer N<br/>Webhook]
+    subgraph "Producteurs"
+        P1[Producteur 1<br/>Serveur API]
+        P2[Producteur 2<br/>Planificateur]
+        P3[Producteur N<br/>Webhook]
     end
 
-    subgraph "Queue"
-        Q[Message Queue<br/>Task Buffer]
+    subgraph "File"
+        Q[File de Messages<br/>Tampon de Tâches]
     end
 
     subgraph "Workers"
-        W1[Worker 1<br/>Process]
-        W2[Worker 2<br/>Process]
-        W3[Worker 3<br/>Process]
+        W1[Worker 1<br/>Processus]
+        W2[Worker 2<br/>Processus]
+        W3[Worker 3<br/>Processus]
     end
 
     P1 --> Q
@@ -44,63 +44,63 @@ graph TB
     style Q fill:#f9f,stroke:#333,stroke-width:4px
 ```
 
-### Key Benefits
+### Avantages Clés
 
-| Benefit | Explanation |
+| Avantage | Explication |
 |---------|-------------|
-| **Decoupling** | Producers don't need to know about workers |
-| **Buffering** | Queue handles traffic spikes |
-| **Scalability** | Add/remove workers independently |
-| **Reliability** | Tasks persist if workers fail |
-| **Retry** | Failed tasks can be requeued |
+| **Découplage** | Les producteurs n'ont pas besoin de connaître les workers |
+| **Mise en Tampon** | La file gère les pics de trafic |
+| **Extensibilité** | Ajoutez/supprimez des workers indépendamment |
+| **Fiabilité** | Les tâches persistent si les workers tombent en panne |
+| **Nouvelle Tentative** | Les tâches échouées peuvent être remises en file |
 
-## System Architecture
+## Architecture du Système
 
-### Full System View
+### Vue Complète du Système
 
 ```mermaid
 sequenceDiagram
     participant C as Client
-    participant P as Producer
-    participant Q as Queue
+    participant P as Producteur
+    participant Q as File
     participant W as Worker
-    participant DB as Result Store
+    participant DB as Magasin de Résultats
 
     C->>P: HTTP POST /task
-    P->>Q: Enqueue Task
-    Q-->>P: Task ID
-    P-->>C: 202 Accepted
+    P->>Q: Mettre en File Tâche
+    Q-->>P: ID de Tâche
+    P-->>C: 202 Accepté
 
-    Note over Q,W: Async Processing
+    Note over Q,W: Traitement Asynchrone
 
-    Q->>W: Fetch Task
-    W->>W: Process Task
-    W->>DB: Save Result
+    Q->>W: Récupérer Tâche
+    W->>W: Traiter Tâche
+    W->>DB: Sauvegarder Résultat
 
-    W->>Q: Ack (Success)
-    Q->>Q: Remove Task
+    W->>Q: Ack (Succès)
+    Q->>Q: Supprimer Tâche
 ```
 
-### Task Lifecycle
+### Cycle de Vie d'une Tâche
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Pending: Producer creates
-    Pending --> Processing: Worker fetches
-    Processing --> Completed: Success
-    Processing --> Failed: Error
-    Processing --> Pending: Retry
-    Failed --> Pending: Max retries not reached
-    Failed --> DeadLetter: Max retries reached
-    Completed --> [*]
-    DeadLetter --> [*]
+    [*] --> EnAttente: Création par le Producteur
+    EnAttente --> EnCours: Récupération par le Worker
+    EnCours --> Terminé: Succès
+    EnCours --> Échoué: Erreur
+    EnCours --> EnAttente: Nouvelle Tentative
+    Échoué --> EnAttente: Nombre max de nouvelles tentatives non atteint
+    Échoué --> LettreMorte: Nombre max de nouvelles tentatives atteint
+    Terminé --> [*]
+    LettreMorte --> [*]
 ```
 
-## Implementation
+## Implémentation
 
-### Data Models
+### Modèles de Données
 
-**Task Definition:**
+**Définition de Tâche :**
 ```typescript
 interface Task {
   id: string;
@@ -134,22 +134,22 @@ class Task:
 
 ---
 
-## TypeScript Implementation
+## Implémentation TypeScript
 
-### Project Structure
+### Structure du Projet
 ```
 queue-system-ts/
 ├── package.json
 ├── docker-compose.yml
 ├── src/
-│   ├── queue.ts          # Queue implementation
-│   ├── producer.ts       # Producer API
-│   ├── worker.ts         # Worker implementation
-│   └── types.ts          # Type definitions
+│   ├── queue.ts          # Implémentation de la file
+│   ├── producer.ts       # API du producteur
+│   ├── worker.ts         # Implémentation du worker
+│   └── types.ts          # Définitions de types
 └── Dockerfile
 ```
 
-### Complete TypeScript Code
+### Code TypeScript Complet
 
 **queue-system-ts/src/types.ts**
 ```typescript
@@ -181,7 +181,7 @@ export class Queue {
   private completed: Task[] = [];
   private failed: Task[] = [];
 
-  // Enqueue a new task
+  // Mettre en file une nouvelle tâche
   enqueue(type: string, payload: any): string {
     const task: Task = {
       id: this.generateId(),
@@ -198,7 +198,7 @@ export class Queue {
     return task.id;
   }
 
-  // Get next pending task (for workers)
+  // Obtenir la prochaine tâche en attente (pour les workers)
   dequeue(): Task | null {
     if (this.pending.length === 0) return null;
 
@@ -210,7 +210,7 @@ export class Queue {
     return task;
   }
 
-  // Mark task as completed
+  // Marquer la tâche comme terminée
   complete(taskId: string, result?: any): void {
     const task = this.processing.get(taskId);
     if (!task) return;
@@ -223,7 +223,7 @@ export class Queue {
     console.log(`[Queue] Completed task ${taskId}`);
   }
 
-  // Mark task as failed (will retry if possible)
+  // Marquer la tâche comme échouée (réessayer si possible)
   fail(taskId: string, error: string): void {
     const task = this.processing.get(taskId);
     if (!task) return;
@@ -244,7 +244,7 @@ export class Queue {
     }
   }
 
-  // Get queue statistics
+  // Obtenir les statistiques de la file
   getStats() {
     return {
       pending: this.pending.length,
@@ -316,19 +316,19 @@ export { queue };
 import http from 'http';
 import { Queue, Task } from './types';
 
-// Simulate task processing
+// Simuler le traitement de tâches
 async function processTask(task: Task): Promise<any> {
   console.log(`[Worker] Processing task ${task.id} (${task.type})`);
 
-  // Simulate work
+  // Simuler le travail
   await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
 
-  // Simulate occasional failures (20% chance)
+  // Simuler des échocs occasionnels (20% de chance)
   if (Math.random() < 0.2) {
     throw new Error('Random processing error');
   }
 
-  // Process based on task type
+  // Traiter en fonction du type de tâche
   switch (task.type) {
     case 'email':
       return { sent: true, to: task.payload.to };
@@ -360,27 +360,27 @@ class Worker {
         await this.processNextTask();
       } catch (error) {
         console.error(`[Worker ${this.id}] Error:`, error);
-        await this.sleep(1000); // Wait before retrying
+        await this.sleep(1000); // Attendre avant de réessayer
       }
     }
   }
 
   private async processNextTask(): Promise<void> {
-    // Fetch task from queue
+    // Récupérer la tâche de la file
     const task = await this.fetchTask();
     if (!task) {
-      await this.sleep(1000); // No task, wait
+      await this.sleep(1000); // Pas de tâche, attendre
       return;
     }
 
     try {
-      // Process the task
+      // Traiter la tâche
       const result = await processTask(task);
 
-      // Mark as complete
+      // Marquer comme terminée
       await this.completeTask(task.id, result);
     } catch (error: any) {
-      // Mark as failed
+      // Marquer comme échouée
       await this.failTask(task.id, error.message);
     }
   }
@@ -392,7 +392,7 @@ class Worker {
         res.on('data', chunk => body += chunk);
         res.on('end', () => {
           if (res.statusCode === 204) {
-            resolve(null); // No tasks available
+            resolve(null); // Aucune tâche disponible
           } else if (res.statusCode === 200) {
             resolve(JSON.parse(body));
           } else {
@@ -450,7 +450,7 @@ class Worker {
   }
 }
 
-// Start worker
+// Démarrer le worker
 const workerId = process.env.WORKER_ID || 'worker-1';
 const worker = new Worker(workerId, 'http://localhost:3000');
 worker.start();
@@ -458,21 +458,21 @@ worker.start();
 
 ---
 
-## Python Implementation
+## Implémentation Python
 
-### Project Structure
+### Structure du Projet
 ```
 queue-system-py/
 ├── requirements.txt
 ├── docker-compose.yml
 ├── src/
-│   ├── queue.py          # Queue implementation
-│   ├── producer.py       # Producer API
-│   └── worker.py         # Worker implementation
+│   ├── queue.py          # Implémentation de la file
+│   ├── producer.py       # API du producteur
+│   └── worker.py         # Implémentation du worker
 └── Dockerfile
 ```
 
-### Complete Python Code
+### Code Python Complet
 
 **queue-system-py/src/queue.py**
 ```python
@@ -508,7 +508,7 @@ class Queue:
         self.failed: List[Task] = []
 
     def enqueue(self, task_type: str, payload: Any) -> str:
-        """Enqueue a new task."""
+        """Mettre en file une nouvelle tâche."""
         task = Task(
             id=f"task-{int(time.time()*1000)}-{uuid.uuid4().hex[:8]}",
             type=task_type,
@@ -519,7 +519,7 @@ class Queue:
         return task.id
 
     def dequeue(self) -> Optional[Task]:
-        """Get next pending task."""
+        """Obtenir la prochaine tâche en attente."""
         if not self.pending:
             return None
 
@@ -530,7 +530,7 @@ class Queue:
         return task
 
     def complete(self, task_id: str, result: Any = None) -> None:
-        """Mark task as completed."""
+        """Marquer la tâche comme terminée."""
         task = self.processing.pop(task_id, None)
         if not task:
             return
@@ -541,7 +541,7 @@ class Queue:
         print(f"[Queue] Completed task {task_id}")
 
     def fail(self, task_id: str, error: str) -> None:
-        """Mark task as failed (will retry if possible)."""
+        """Marquer la tâche comme échouée (réessayer si possible)."""
         task = self.processing.pop(task_id, None)
         if not task:
             return
@@ -559,7 +559,7 @@ class Queue:
             print(f"[Queue] Task {task_id} failed, retrying ({task.retries}/{task.max_retries})")
 
     def get_stats(self) -> Dict[str, int]:
-        """Get queue statistics."""
+        """Obtenir les statistiques de la file."""
         return {
             'pending': len(self.pending),
             'processing': len(self.processing),
@@ -616,7 +616,7 @@ class ProducerHandler(BaseHTTPRequestHandler):
             self.wfile.write(response.encode())
 
     def log_message(self, format, *args):
-        pass  # Suppress default logging
+        pass  # Supprimer la journalisation par défaut
 
 if __name__ == '__main__':
     import os
@@ -635,18 +635,18 @@ import requests
 from typing import Optional, Dict, Any
 from queue import Task
 
-# Simulate task processing
+# Simuler le traitement de tâches
 def process_task(task: Task) -> Any:
     print(f"[Worker] Processing task {task.id} ({task.type})")
 
-    # Simulate work
+    # Simuler le travail
     time.sleep(1 + random.random() * 2)
 
-    # Simulate occasional failures (20% chance)
+    # Simuler des échecs occasionnels (20% de chance)
     if random.random() < 0.2:
         raise Exception('Random processing error')
 
-    # Process based on task type
+    # Traiter en fonction du type de tâche
     if task.type == 'email':
         return {'sent': True, 'to': task.payload.get('to')}
     elif task.type == 'image':
@@ -663,7 +663,7 @@ class Worker:
         self.running = False
 
     def start(self):
-        """Start the worker loop."""
+        """Démarrer la boucle du worker."""
         self.running = True
         print(f"[Worker {self.id}] Started")
 
@@ -675,10 +675,10 @@ class Worker:
                 time.sleep(1)
 
     def process_next_task(self):
-        """Fetch and process the next task."""
+        """Récupérer et traiter la prochaine tâche."""
         task = self.fetch_task()
         if not task:
-            time.sleep(1)  # No task, wait
+            time.sleep(1)  # Pas de tâche, attendre
             return
 
         try:
@@ -688,17 +688,17 @@ class Worker:
             self.fail_task(task['id'], str(e))
 
     def fetch_task(self) -> Optional[Dict]:
-        """Fetch next task from queue."""
+        """Récupérer la prochaine tâche de la file."""
         try:
             response = requests.get(f"{self.queue_url}/dequeue", timeout=5)
             if response.status_code == 204:
-                return None  # No tasks
+                return None  # Aucune tâche
             return response.json()
         except requests.RequestException:
             return None
 
     def complete_task(self, task_id: str, result: Any):
-        """Mark task as complete."""
+        """Marquer la tâche comme terminée."""
         requests.post(
             f"{self.queue_url}/complete/{task_id}",
             json={'result': result},
@@ -706,7 +706,7 @@ class Worker:
         )
 
     def fail_task(self, task_id: str, error: str):
-        """Mark task as failed."""
+        """Marquer la tâche comme échouée."""
         requests.post(
             f"{self.queue_url}/fail/{task_id}",
             json={'error': error},
@@ -714,7 +714,7 @@ class Worker:
         )
 
     def stop(self):
-        """Stop the worker."""
+        """Arrêter le worker."""
         self.running = False
 
 if __name__ == '__main__':
@@ -726,9 +726,9 @@ if __name__ == '__main__':
 
 ---
 
-## Docker Compose Setup
+## Configuration Docker Compose
 
-### TypeScript Version (docker-compose.yml)
+### Version TypeScript (docker-compose.yml)
 ```yaml
 version: '3.8'
 
@@ -774,7 +774,7 @@ services:
     command: npm run start:worker
 ```
 
-### TypeScript Dockerfile
+### Dockerfile TypeScript
 ```dockerfile
 FROM node:18-alpine
 
@@ -788,7 +788,7 @@ COPY . .
 CMD ["npm", "run", "start:producer"]
 ```
 
-### Python Version (docker-compose.yml)
+### Version Python (docker-compose.yml)
 ```yaml
 version: '3.8'
 
@@ -837,7 +837,7 @@ services:
     command: python src/worker.py
 ```
 
-### Python Dockerfile
+### Dockerfile Python
 ```dockerfile
 FROM python:3.11-alpine
 
@@ -853,16 +853,16 @@ CMD ["python", "src/producer.py"]
 
 ---
 
-## Running the Example
+## Exécution de l'Exemple
 
-### Step 1: Start the System
+### Étape 1 : Démarrer le Système
 
 ```bash
 cd examples/01-queue
 docker-compose up --build
 ```
 
-You should see output like:
+Vous devriez voir une sortie comme :
 ```
 producer      | Producer API listening on port 3000
 worker-1      | [Worker worker-1] Started
@@ -870,22 +870,22 @@ worker-2      | [Worker worker-2] Started
 worker-3      | [Worker worker-3] Started
 ```
 
-### Step 2: Submit Tasks
+### Étape 2 : Soumettre des Tâches
 
-Open a new terminal and submit some tasks:
+Ouvrez un nouveau terminal et soumettez quelques tâches :
 
 ```bash
-# Submit an email task
+# Soumettre une tâche email
 curl -X POST http://localhost:3000/task \
   -H "Content-Type: application/json" \
   -d '{"type": "email", "payload": {"to": "user@example.com", "subject": "Hello"}}'
 
-# Submit an image processing task
+# Soumettre une tâche de traitement d'image
 curl -X POST http://localhost:3000/task \
   -H "Content-Type: application/json" \
   -d '{"type": "image", "payload": {"url": "https://example.com/image.jpg"}}'
 
-# Submit multiple tasks
+# Soumettre plusieurs tâches
 for i in {1..10}; do
   curl -X POST http://localhost:3000/task \
     -H "Content-Type: application/json" \
@@ -893,22 +893,22 @@ for i in {1..10}; do
 done
 ```
 
-### Step 3: Watch Processing
+### Étape 3 : Observer le Traitement
 
-In the Docker logs, you'll see:
+Dans les journaux Docker, vous verrez :
 ```
 worker-2      | [Queue] Dequeued task task-1234567890-abc123
 worker-2      | [Worker] Processing task task-1234567890-abc123 (report)
 worker-2      | [Queue] Completed task task-1234567890-abc123
 ```
 
-### Step 4: Check Statistics
+### Étape 4 : Vérifier les Statistiques
 
 ```bash
 curl http://localhost:3000/stats
 ```
 
-Response:
+Réponse :
 ```json
 {
   "pending": 5,
@@ -918,61 +918,61 @@ Response:
 }
 ```
 
-### Step 5: Test Fault Tolerance
+### Étape 5 : Tester la Tolérance aux Pannes
 
-Stop one worker:
+Arrêtez un worker :
 ```bash
 docker-compose stop worker-1
 ```
 
-Tasks continue processing with the remaining workers. The queue automatically handles the load redistribution.
+Les tâches continuent d'être traitées par les workers restants. La file gère automatiquement la redistribution de la charge.
 
-## Exercises
+## Exercices
 
-### Exercise 1: Add Priority Support
+### Exercice 1 : Ajouter le Support des Priorités
 
-Modify the queue to support high/normal/low priority tasks:
-1. Add a `priority` field to the Task model
-2. Modify `enqueue()` to sort pending tasks by priority
-3. Test with mixed priority tasks
+Modifiez la file pour prendre en charge les tâches de priorité haute/normale/basse :
+1. Ajoutez un champ `priority` au modèle de Tâche
+2. Modifiez `enqueue()` pour trier les tâches en attente par priorité
+3. Testez avec des tâches de priorité mixte
 
-### Exercise 2: Implement Dead Letter Queue
+### Exercice 2 : Implémenter une File des Lettres Mortes
 
-Create a separate queue for permanently failed tasks:
-1. Add a `dead_letter` queue to store failed tasks
-2. Add an API endpoint to inspect/retry dead letter tasks
-3. Log failed tasks to a file for manual inspection
+Créez une file séparée pour les tâches définitivement échouées :
+1. Ajoutez une file `dead_letter` pour stocker les tâches échouées
+2. Ajoutez un point de terminaison API pour inspecter/réessayer les tâches de lettres mortes
+3. Journalisez les tâches échouées dans un fichier pour inspection manuelle
 
-### Exercise 3: Add Task Scheduling
+### Exercice 3 : Ajouter la Planification de Tâches
 
-Implement delayed task execution:
-1. Add an `executeAt` timestamp to tasks
-2. Modify workers to skip tasks scheduled for the future
-3. Use a timer/scheduler to move scheduled tasks to pending queue
+Implémentez l'exécution différée des tâches :
+1. Ajoutez un horodatage `executeAt` aux tâches
+2. Modifiez les workers pour ignorer les tâches planifiées dans le futur
+3. Utilisez une minuterie/planificateur pour déplacer les tâches planifiées vers la file en attente
 
-## Summary
+## Résumé
 
-### Key Takeaways
+### Points Clés à Retenir
 
-1. **Producer-consumer pattern** decouples task creation from processing
-2. **Queues buffer tasks** and handle traffic spikes
-3. **Workers scale independently** of producers
-4. **Retry logic** provides fault tolerance
-5. **Docker Compose** enables easy local deployment
+1. **Modèle producteur-consommateur** découple la création de tâches du traitement
+2. **Les files mettent en tampon les tâches** et gèrent les pics de trafic
+3. **Les workers évoluent indépendamment** des producteurs
+4. **La logique de nouvelle tentative** fournit une tolérance aux pannes
+5. **Docker Compose** permet un déploiement local facile
 
-### Check Your Understanding
+### Vérifiez Votre Compréhension
 
-- [ ] How does the queue handle worker failures?
-- [ ] What happens when a task fails and max retries is reached?
-- [ ] Why is the queue useful for handling traffic spikes?
-- [ ] How would you add a new worker type (e.g., a worker that only processes emails)?
+- [ ] Comment la file gère-t-elle les défaillances de workers ?
+- [ ] Que se passe-t-il lorsqu'une tâche échoue et que le nombre max de nouvelles tentatives est atteint ?
+- [ ] Pourquoi la file est-elle utile pour gérer les pics de trafic ?
+- [ ] Comment ajouteriez-vous un nouveau type de worker (par exemple, un worker qui traite uniquement les emails) ?
 
-## 🧠 Chapter Quiz
+## 🧠 Quiz du Chapitre
 
-Test your mastery of these concepts! These questions will challenge your understanding and reveal any gaps in your knowledge.
+Testez votre maîtrise de ces concepts ! Ces questions mettront au défi votre compréhension et révéleront les lacunes dans vos connaissances.
 
 {{#quiz ../../quizzes/fundamentals-queue-system.toml}}
 
-## What's Next
+## Suite
 
-Now that we've built a queue system, let's explore how to partition data across multiple nodes: [Data Partitioning](../data-store/01-partitioning.md)
+Maintenant que nous avons construit un système de file, explorons comment partitionner les données sur plusieurs nœuds : [Partitionnement des Données](../data-store/01-partitioning.md)

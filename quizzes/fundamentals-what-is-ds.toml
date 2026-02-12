@@ -1,65 +1,65 @@
-# Quiz: What is a Distributed System?
+# Quiz : Qu'est-ce qu'un Système Distribué ?
 
 [[questions]]
 type = "MultipleChoice"
-prompt.prompt = "Leslie Lamport famously defined distributed systems with a wry observation about failure. Which of these captures his definition best?"
+prompt.prompt = "Leslie Lamport a célèbrement défini les systèmes distribués avec une observation incisive sur les pannes. Laquelle de ces définitions capture le mieux sa pensée ?"
 prompt.distractors = [
-  "A system where the failure of a computer you didn't even know existed can render your own computer unusable.",
-  "A collection of independent computers that appears to its users as a single coherent system.",
-  "Multiple computers working together to solve a problem faster than any single machine."
+  "Un système où la panne d'un ordinateur que vous ne connaissiez même pas peut rendre le vôtre inutilisable.",
+  "Une collection d'ordinateurs indépendants qui apparaît à ses utilisateurs comme un système cohérent unique.",
+  "Plusieurs ordinateurs travaillant ensemble pour résoudre un problème plus rapidement que n'importe quelle machine unique."
 ]
-answer.answer = "A system where the failure of a computer you didn't even know existed can render your own computer unusable."
-context = "Lamport's definition brilliantly highlights the dark side of distribution: independent failure. When components can fail separately, a failure somewhere you didn't even know existed can cascade and break everything. This is why distributed systems are both powerful and terrifying!"
+answer.answer = "Un système où la panne d'un ordinateur que vous ne connaissiez même pas peut rendre le vôtre inutilisable."
+context = "La définition de Lamport met brillamment en évidence le côté obscur de la distribution : la panne indépendante. Lorsque les composants peuvent tomber en panne séparément, une défaillance quelque part que vous ne connaissiez même pas peut se propager et tout casser. C'est pourquoi les systèmes distribués sont à la fois puissants et terrifiants !"
 id = "310d917d-a04e-4d5c-8b27-1a198aaa3948"
 
 [[questions]]
 type = "MultipleChoice"
-prompt.prompt = "You're building a system and realize you can't rely on a single 'now' across all your servers. Which fundamental characteristic of distributed systems have you just encountered?"
+prompt.prompt = "Vous construisez un système et réalisez que vous ne pouvez pas compter sur un 'maintenant' unique sur tous vos serveurs. Quelle caractéristique fondamentale des systèmes distribués venez-vous de rencontrer ?"
 prompt.distractors = [
-  "Concurrency - multiple things happening at once",
-  "Independent failure - components can fail separately",
-  "The illusion of unity - appearing as one system"
+  "La concurrence - plusieurs choses se produisant en même temps",
+  "La panne indépendante - les composants peuvent tomber en panne séparément",
+  "L'illusion d'unité - apparaître comme un seul système"
 ]
-answer.answer = "No global clock - each node has its own clock"
-context = "Time is surprisingly tricky in distributed systems! Each node has its own clock, and network latency means you can't synchronize them perfectly. This is why distributed systems use logical clocks (like vector clocks) instead of physical clocks to order events. Your 'now' is not the same as someone else's 'now'!"
+answer.answer = "Pas d'horloge globale - chaque nœud a sa propre horloge"
+context = "Le temps est étonnamment délicat dans les systèmes distribués ! Chaque nœud a sa propre horloge, et la latence du réseau signifie que vous ne pouvez pas les synchroniser parfaitement. C'est pourquoi les systèmes distribués utilisent des horloges logiques (comme les horloges vectorielles) au lieu des horloges physiques pour ordonner les événements. Votre 'maintenant' n'est pas le même que celui de quelqu'un d'autre !"
 id = "e429a35c-a923-4e74-b3ab-08f66c174332"
 
 [[questions]]
 type = "ShortAnswer"
-prompt.prompt = "You're the CTO of a growing startup. Your single powerful server costs $100,000 and is maxed out. Your CEO wants to add more machines instead of buying an even bigger server. What's this scaling strategy called?"
-answer.answer = "horizontal scaling"
-answer.alternatives = ["scale out", "scaling out"]
-context = "Horizontal scaling (scale out) means adding more commodity machines to your system. This is virtually unlimited and cost-effective. The alternative is vertical scaling (scale up), which means buying a bigger, more expensive single server. Eventually, vertical scaling hits hardware limits—so horizontal scaling is the way to go for growing systems!"
+prompt.prompt = "Vous êtes le CTO d'une startup en croissance. Votre serveur unique puissant coûte 100 000 $ et est à sa limite. Votre PDG veut ajouter plus de machines au lieu d'acheter un serveur encore plus grand. Comment s'appelle cette stratégie de mise à l'échelle ?"
+answer.answer = "mise à l'échelle horizontale"
+answer.alternatives = ["scale out", "scaling out", "mise à l'echelle horizontale", "mise à l'échelle horizontalement"]
+context = "La mise à l'échelle horizontale (scale out) signifie ajouter plus de machines standard à votre système. C'est pratiquement illimité et rentable. L'alternative est la mise à l'échelle verticale (scale up), qui signifie acheter un serveur unique plus grand et plus cher. Éventuellement, la mise à l'échelle verticale atteint les limites matérielles — donc la mise à l'échelle horizontale est la voie à suivre pour les systèmes en croissance !"
 id = "3647d7e9-6ae2-4040-aebc-c45f45faa7c6"
 
 [[questions]]
 type = "MultipleChoice"
-prompt.prompt = "Your friend says: 'I'll build a distributed system because it's always more reliable!' You, being a distributed systems expert, respond with: 'Well, actually...' and then point out which challenge?"
+prompt.prompt = "Votre ami dit : 'Je vais construire un système distribué parce que c'est toujours plus fiable !' Vous, en tant qu'expert en systèmes distribués, répondez : 'Eh bien, en fait...' et puis soulignez quel défi ?"
 prompt.distractors = [
-  "Distributed systems are always slower due to network latency.",
-  "Distributed systems introduce complexity like network issues, concurrency problems, and consistency challenges.",
-  "Distributed systems are only useful for web applications."
+  "Les systèmes distribués sont toujours plus lents en raison de la latence du réseau.",
+  "Les systèmes distribués introduisent de la complexité comme les problèmes réseau, les problèmes de concurrence et les défis de cohérence.",
+  "Les systèmes distribués ne sont utiles que pour les applications web."
 ]
-answer.answer = "Distributed systems introduce complexity like network issues, concurrency problems, and consistency challenges."
-context = "Distribution is not free! The fundamental dilemma is whether the benefits (scalability, reliability, lower latency) are worth the costs (network unreliability, race conditions, partial failures, keeping data in sync). For most modern applications, the answer is 'yes'—but it's always a trade-off, never a free lunch!"
+answer.answer = "Les systèmes distribués introduisent de la complexité comme les problèmes réseau, les problèmes de concurrence et les défis de cohérence."
+context = "La distribution n'est pas gratuite ! Le dilemme fondamental est de savoir si les avantages (évolutivité, fiabilité, latence plus faible) valent les coûts (fiabilité du réseau, conditions de course, pannes partielles, maintien des données synchronisées). Pour la plupart des applications modernes, la réponse est 'oui' — mais c'est toujours un compromis, jamais un repas gratuit !"
 id = "17c72952-cf5d-471f-bfab-0e434dc57579"
 
 [[questions]]
 type = "MultipleChoice"
-prompt.prompt = "You're explaining distributed systems to a non-technical friend. You say: 'Imagine a restaurant where the kitchen, the dining room, and the bar all seem like one seamless experience, but behind the scenes...' What completes this analogy best?"
+prompt.prompt = "Vous expliquez les systèmes distribués à un ami non technique. Vous dites : 'Imaginez un restaurant où la cuisine, la salle à manger et le bar semblent être une expérience transparente, mais derrière les rideaux...' Quoi complète le mieux cette analogie ?"
 prompt.distractors = [
-  "...there's just one big kitchen doing everything.",
-  "...each section operates independently with its own staff, communicating through orders and tickets.",
-  "...the manager micromanages every single interaction."
+  "...il y a juste une grande cuisine qui fait tout.",
+  "...chaque section opère indépendamment avec son propre personnel, communiquant via les commandes et les tickets.",
+  "...le gérant micromanage chaque interaction unique."
 ]
-answer.answer = "...each section operates independently with its own staff, communicating through orders and tickets."
-context = "The illusion of unity is key! Users see what appears to be a single, coherent system—like a seamless restaurant experience. Behind the scenes, multiple independent components (kitchen, bar, dining room = nodes in a distributed system) communicate through messages (orders, tickets) to create that illusion. The magic is in making the complexity invisible!"
+answer.answer = "...chaque section opère indépendamment avec son propre personnel, communiquant via les commandes et les tickets."
+context = "L'illusion d'unité est la clé ! Les utilisateurs voient ce qui semble être un système unique et cohérent — comme une expérience de restaurant transparente. Derrière les rideaux, plusieurs composants indépendants (cuisine, bar, salle à manger = nœuds dans un système distribué) communiquent via des messages (commandes, tickets) pour créer cette illusion. La magie est de rendre la complexité invisible !"
 id = "f088678b-7873-4bcf-b4da-1269804ac0d4"
 
 [[questions]]
 type = "ShortAnswer"
-prompt.prompt = "A distributed systems student is confused. They ask: 'If there's no global clock, how do I know which event happened first?' You tell them about a type of clock that doesn't measure time, but instead tracks __________ between events."
-answer.answer = "causality"
-answer.alternatives = ["causal relationships", "event ordering", "happens-before relationships"]
-context = "Logical clocks don't measure time—they track causality! They help you answer 'did event A cause event B?' or 'did A happen before B?' This is possible without a global clock because causal relationships are transitive: if A caused B, and B caused C, then A caused C. We'll explore this more in later sessions!"
+prompt.prompt = "Un étudiant en systèmes distribués est confus. Il demande : 'S'il n'y a pas d'horloge globale, comment savoir quel événement s'est produit en premier ?' Vous leur parlez d'un type d'horloge qui ne mesure pas le temps, mais suit plutôt les __________ entre les événements."
+answer.answer = "causalité"
+answer.alternatives = ["relations causales", "ordonnancement des événements", "relations d'ordre", "relations d'avant-après"]
+context = "Les horloges logiques ne mesurent pas le temps — elles suivent la causalité ! Elles aident à répondre 'l'événement A a-t-il causé l'événement B ?' ou 'A s'est-il produit avant B ?' C'est possible sans horloge globale car les relations causales sont transitives : si A a causé B, et B a causé C, alors A a causé C. Nous explorerons cela plus en détail dans les sessions suivantes !"
 id = "ec20be6f-7033-4e2f-9ffd-11b5fded6135"

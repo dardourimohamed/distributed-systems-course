@@ -1,62 +1,62 @@
-# Troubleshooting
+# Dépannage
 
-Common issues and solutions when working with the course examples.
+Problèmes courants et solutions lors de l'utilisation des exemples du cours.
 
-## Docker Issues
+## Problèmes Docker
 
-### Port Already in Use
+### Port Déjà Utilisé
 
 ```
 Error: bind: address already in use
 ```
 
-**Solution:** Change the port in docker-compose.yml or stop the conflicting service.
+**Solution :** Changez le port dans docker-compose.yml ou arrêtez le service en conflit.
 
-### Permission Denied
+### Permission Refusée
 
 ```
 Error: permission denied while trying to connect to the Docker daemon
 ```
 
-**Solution:** Add your user to the docker group:
+**Solution :** Ajoutez votre utilisateur au groupe docker :
 ```bash
 sudo usermod -aG docker $USER
 newgrp docker
 ```
 
-## Build Issues
+## Problèmes de Build
 
-### TypeScript: Module Not Found
+### TypeScript : Module Non Trouvé
 
-**Solution:** Install dependencies:
+**Solution :** Installez les dépendances :
 ```bash
 npm install
 ```
 
-### Python: Module Not Found
+### Python : Module Non Trouvé
 
-**Solution:** Install dependencies:
+**Solution :** Installez les dépendances :
 ```bash
 pip install -r requirements.txt
 ```
 
-## Runtime Issues
+## Problèmes d'Exécution
 
-### Connection Refused
+### Connexion Refusée
 
-**Solution:** Check that all services are running:
+**Solution :** Vérifiez que tous les services sont en cours d'exécution :
 ```bash
 docker-compose ps
 ```
 
-### Node Can't Connect to Peers
+### Le Nœud ne Peut pas se Connecter aux Pairs
 
-**Solution:** Verify network configuration in docker-compose.yml. Ensure all nodes are on the same network.
+**Solution :** Vérifiez la configuration réseau dans docker-compose.yml. Assurez-vous que tous les nœuds sont sur le même réseau.
 
-## Getting Help
+## Obtenir de l'Aide
 
-If you encounter issues not covered here:
+Si vous rencontrez des problèmes non couverts ici :
 
-1. Check the Docker logs: `docker-compose logs`
-2. Verify your Docker installation: `docker --version`
-3. See [Further Reading](./further-reading.md) for additional resources
+1. Consultez les journaux Docker : `docker-compose logs`
+2. Vérifiez votre installation Docker : `docker --version`
+3. Voir [Pour Aller Plus Loin](./further-reading.md) pour des ressources supplémentaires

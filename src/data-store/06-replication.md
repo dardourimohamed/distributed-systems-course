@@ -1,113 +1,113 @@
-# Replication and Leader Election
+# Replication et Election de Leader
 
-> **Session 4** - Full session
+> **Session 4** - Session complète
 
-## Learning Objectives
+## Objectifs d'Apprentissage
 
-- [ ] Understand why we replicate data
-- [ ] Learn single-leader vs multi-leader replication
-- [ ] Implement leader-based replication
-- [ ] Build a simple leader election mechanism
-- [ ] Deploy a 3-node replicated store
+- [ ] Comprendre pourquoi nous répliquons les données
+- [ ] Apprendre la réplication à leader unique vs multi-leader
+- [ ] Implémenter la réplication basée sur un leader
+- [ ] Construire un mécanisme simple d'élection de leader
+- [ ] Déployer un magasin répliqué à 3 nœuds
 
-## Why Replicate Data?
+## Pourquoi Répliquer les Données ?
 
-In our single-node store from Session 3, what happens when the node fails?
+Dans notre magasin à nœud unique de la Session 3, que se passe-t-il lorsque le nœud tombe en panne ?
 
-**Answer:** All data is lost and the system becomes unavailable.
+**Réponse :** Toutes les données sont perdues et le système devient indisponible.
 
 ```mermaid
 graph LR
-    subgraph "Single Node - No Fault Tolerance"
+    subgraph "Nœud Unique - Pas de Tolérance aux Pannes"
         C[Clients] --> N[Node 1]
         N1[Node 1<br/>❌ FAILED]
         style N1 fill:#f66,stroke:#333,stroke-width:3px
     end
 ```
 
-**Replication solves this by keeping copies of data on multiple nodes:**
+**La réplication résout ce problème en gardant des copies des données sur plusieurs nœuds :**
 
 ```mermaid
 graph TB
-    subgraph "Replicated Store - Fault Tolerant"
+    subgraph "Magasin Répliqué - Tolérant aux Pannes"
         C[Clients]
 
         L[Leader<br/>Node 1]
 
-        F1[Follower<br/>Node 2]
-        F2[Follower<br/>Node 3]
+        F1[Suiveur<br/>Node 2]
+        F2[Suiveur<br/>Node 3]
 
         C --> L
-        L -->|"replicate"| F1
-        L -->|"replicate"| F2
+        L -->|"réplique"| F1
+        L -->|"réplique"| F2
     end
 
     style L fill:#6f6,stroke:#333,stroke-width:3px
 ```
 
-**Benefits of Replication:**
-- **Fault tolerance**: If one node fails, others have the data
-- **Read scaling**: Clients can read from any replica
-- **Low latency**: Place replicas closer to users
-- **High availability**: System continues during node failures
+**Avantages de la Réplication :**
+- **Tolérance aux pannes** : Si un nœud tombe en panne, les autres ont les données
+- **Mise à l'échelle des lectures** : Les clients peuvent lire depuis n'importe quel réplica
+- **Faible latence** : Placer les répliques plus près des utilisateurs
+- **Haute disponibilité** : Le système continue pendant les pannes de nœuds
 
-## Replication Strategies
+## Stratégies de Réplication
 
-### Single-Leader Replication
+### Réplication à Leader Unique
 
-Also called: primary-replica, master-slave, active-passive
+Également appelée : primaire-réplique, maître-esclave, actif-passif
 
 ```mermaid
 sequenceDiagram
     participant C as Client
     participant L as Leader
-    participant F1 as Follower 1
-    participant F2 as Follower 2
+    participant F1 as Suiveur 1
+    participant F2 as Suiveur 2
 
-    Note over C,F2: Write Operation
+    Note over C,F2: Opération d'Écriture
     C->>L: PUT /key/name "Alice"
-    L->>L: Write to local storage
-    L->>F1: Replicate: SET name = "Alice"
-    L->>F2: Replicate: SET name = "Alice"
+    L->>L: Écrire dans le stockage local
+    L->>F1: Répliquer : SET name = "Alice"
+    L->>F2: Répliquer : SET name = "Alice"
     F1->>L: ACK
     F2->>L: ACK
-    L->>C: Response: Success
+    L->>C: Réponse : Success
 
-    Note over C,F2: Read Operation
+    Note over C,F2: Opération de Lecture
     C->>L: GET /key/name
-    L->>C: Response: "Alice"
+    L->>C: Réponse : "Alice"
 
-    Note over C,F2: Or read from follower
+    Note over C,F2: Ou lire depuis le suiveur
     C->>F1: GET /key/name
-    F1->>C: Response: "Alice"
+    F1->>C: Réponse : "Alice"
 ```
 
-**Characteristics:**
-- **Leader** handles all writes
-- **Followers** replicate from leader
-- **Reads** can go to leader or followers
-- **Simple** consistency model
+**Caractéristiques :**
+- Le **Leader** gère toutes les écritures
+- Les **Suiveurs** se répliquent depuis le leader
+- Les **Lectures** peuvent aller vers le leader ou les suiveurs
+- **Modèle de cohérence** simple
 
-### Multi-Leader Replication
+### Réplication Multi-Leader
 
-Also called: multi-master, active-active
+Également appelée : multi-maître, actif-actif
 
 ```mermaid
 graph TB
-    subgraph "Multi-Leader Replication"
+    subgraph "Réplication Multi-Leader"
         C1[Client 1]
         C2[Client 2]
 
         L1[Leader 1<br/>Datacenter A]
         L2[Leader 2<br/>Datacenter B]
 
-        F1[Follower 1]
-        F2[Follower 2]
+        F1[Suiveur 1]
+        F2[Suiveur 2]
 
         C1 --> L1
         C2 --> L2
 
-        L1 <-->|"resolve conflicts"| L2
+        L1 <-->|"résoudre les conflits"| L2
 
         L1 --> F1
         L2 --> F2
@@ -117,100 +117,100 @@ graph TB
     style L2 fill:#6f6,stroke:#333,stroke-width:3px
 ```
 
-**Characteristics:**
-- Multiple nodes accept writes
-- More complex conflict resolution
-- Better for geo-distributed setups
-- **We won't implement this** (advanced topic)
+**Caractéristiques :**
+- Plusieurs nœuds acceptent les écritures
+- Résolution de conflits plus complexe
+- Mieux pour les configurations géo-distribuées
+- **Nous ne l'implémenterons pas** (sujet avancé)
 
-### Synchronous vs Asynchronous Replication
+### Réplication Synchrone vs Asynchrone
 
 ```mermaid
 sequenceDiagram
     participant C as Client
     participant L as Leader
 
-    par Synchronous Replication
-        L->>F: Replicate write
-        F->>L: ACK (must wait)
-        L->>C: Success (after replicas confirm)
-    and Asynchronous Replication
-        L->>C: Success (immediately)
-        L--xF: Replicate in background
+    par Réplication Synchrone
+        L->>F: Répliquer l'écriture
+        F->>L: ACK (doit attendre)
+        L->>C: Success (après confirmation des répliques)
+    and Réplication Asynchrone
+        L->>C: Success (immédiatement)
+        L--xF: Répliquer en arrière-plan
     end
 
-    participant F as Follower
+    participant F as Suiveur
 ```
 
-| Strategy | Pros | Cons |
-|----------|------|------|
-| **Synchronous** | Strong consistency, no data loss | Slower writes, blocking |
-| **Asynchronous** | Fast writes, non-blocking | Data loss on leader failure, stale reads |
+| Stratégie | Avantages | Inconvénients |
+|----------|-----------|---------------|
+| **Synchrone** | Cohérence forte, aucune perte de données | Écritures plus lentes, bloquant |
+| **Asynchrone** | Écritures rapides, non-bloquant | Perte de données en cas de panne du leader, lectures périmées |
 
-**For this course, we'll use asynchronous replication** for simplicity.
+**Pour ce cours, nous utiliserons la réplication asynchrone** pour simplifier.
 
-## Leader Election
+## Élection de Leader
 
-When the leader fails, followers must elect a new leader:
+Lorsque le leader tombe en panne, les suiveurs doivent élire un nouveau leader :
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Follower: Node starts
-    Follower --> Candidate: No heartbeat from leader
-    Candidate --> Leader: Wins election (majority votes)
-    Candidate --> Follower: Loses election
-    Leader --> Follower: Detects higher term/node
-    Follower --> [*]: Node stops
+    [*] --> Suiveur: Le nœud démarre
+    Suiveur --> Candidat: Pas de heartbeat du leader
+    Candidat --> Leader: Gagne l'élection (majorité des votes)
+    Candidat --> Suiveur: Perd l'élection
+    Leader --> Suiveur: Détecte un terme/nœud supérieur
+    Suiveur --> [*]: Le nœud s'arrête
 ```
 
-### The Bully Algorithm
+### L'Algorithme du Bully
 
-A simple leader election algorithm:
+Un algorithme simple d'élection de leader :
 
-1. **Detect leader failure**: No heartbeat for timeout period
-2. **Start election**: Node with highest ID becomes leader candidate
-3. **Vote**: Lower-numbered nodes vote for the candidate
-4. **Become leader**: Candidate becomes leader if majority agrees
+1. **Détecter la panne du leader** : Pas de heartbeat pendant la période de timeout
+2. **Démarrer l'élection** : Le nœud avec l'ID le plus élevé devient candidat leader
+3. **Voter** : Les nœuds avec des numéros inférieurs votent pour le candidat
+4. **Devenir leader** : Le candidat devient leader si la majorité est d'accord
 
 ```mermaid
 sequenceDiagram
-    participant N1 as Node 1<br/>(Leader)
-    participant N2 as Node 2
-    participant N3 as Node 3
+    participant N1 as Nœud 1<br/>(Leader)
+    participant N2 as Nœud 2
+    participant N3 as Nœud 3
 
-    Note over N1,N3: Normal Operation
+    Note over N1,N3: Fonctionnement Normal
     N1->>N2: Heartbeat
     N1->>N3: Heartbeat
 
-    Note over N1,N3: Leader Fails
-    N1--xN2: Heartbeat timeout!
-    N1--xN3: Heartbeat timeout!
+    Note over N1,N3: Panne du Leader
+    N1--xN2: Heartbeat timeout !
+    N1--xN3: Heartbeat timeout !
 
-    Note over N2,N3: Election Starts
-    N2->>N3: Vote request (ID=2)
-    N3->>N2: Vote for N2 (2 > 3? No, wait)
+    Note over N2,N3: Début de l'Élection
+    N2->>N3: Demande de vote (ID=2)
+    N3->>N2: Voter pour N2 (2 > 3 ? Non, attendre)
 
-    Note over N2,N3: Actually, N3 has higher ID
-    N3->>N2: Vote request (ID=3)
-    N2->>N3: Vote for N3 (3 > 2, yes!)
+    Note over N2,N3: En fait, N3 a un ID plus élevé
+    N3->>N2: Demande de vote (ID=3)
+    N2->>N3: Voter pour N3 (3 > 2, oui !)
 
-    Note over N2,N3: N3 Becomes Leader
-    N3->>N2: I am the leader
+    Note over N2,N3: N3 Devient Leader
+    N3->>N2: Je suis le leader
     N3->>N2: Heartbeat
 ```
 
-**For simplicity, we'll use a simpler approach:**
-- Lowest node ID becomes leader
-- If leader fails, next lowest becomes leader
-- No voting, just order-based selection
+**Pour simplifier, nous utiliserons une approche plus simple :**
+- Le nœud avec l'ID le plus bas devient leader
+- Si le leader tombe en panne, le prochain plus bas devient leader
+- Pas de vote, juste une sélection basée sur l'ordre
 
 ---
 
-## Implementation
+## Implémentation
 
-### TypeScript Implementation
+### Implémentation TypeScript
 
-**Project Structure:**
+**Structure du Projet :**
 ```
 replicated-store-ts/
 ├── package.json
@@ -218,7 +218,7 @@ replicated-store-ts/
 ├── Dockerfile
 ├── docker-compose.yml
 └── src/
-    └── node.ts       # Replicated node with leader election
+    └── node.ts       # Nœud répliqué avec élection de leader
 ```
 
 **replicated-store-ts/src/node.ts**
@@ -226,7 +226,7 @@ replicated-store-ts/
 import http from 'http';
 
 /**
- * Node configuration
+ * Configuration du nœud
  */
 const config = {
   nodeId: process.env.NODE_ID || 'node-1',
@@ -239,7 +239,7 @@ const config = {
 type NodeRole = 'leader' | 'follower' | 'candidate';
 
 /**
- * Replicated Store Node
+ * Nœud de Magasin Répliqué
  */
 class StoreNode {
   public nodeId: string;
@@ -267,13 +267,13 @@ class StoreNode {
   }
 
   /**
-   * Start election timeout timer
+   * Démarrer le timer de timeout d'élection
    */
   private startElectionTimer() {
     this.electionTimer = setTimeout(() => {
       const timeSinceHeartbeat = Date.now() - this.lastHeartbeat;
       if (timeSinceHeartbeat > config.electionTimeout && this.role !== 'leader') {
-        console.log(`[${this.nodeId}] Election timeout! Starting election...`);
+        console.log(`[${this.nodeId}] Election timeout ! Démarrage de l'élection...`);
         this.startElection();
       }
       this.startElectionTimer();
@@ -281,13 +281,13 @@ class StoreNode {
   }
 
   /**
-   * Start leader election (simplified: lowest ID wins)
+   * Démarrer l'élection de leader (simplifié : l'ID le plus bas gagne)
    */
   private startElection() {
     this.term++;
     this.role = 'candidate';
 
-    // Simple strategy: lowest node ID becomes leader
+    // Stratégie simple : le nœud avec l'ID le plus bas devient leader
     const allNodes = [this.nodeId, ...this.peers].sort();
     const lowestNode = allNodes[0];
 
@@ -296,24 +296,24 @@ class StoreNode {
     } else {
       this.role = 'follower';
       this.leaderId = lowestNode;
-      console.log(`[${this.nodeId}] Waiting for ${lowestNode} to become leader`);
+      console.log(`[${this.nodeId}] En attente de ${lowestNode} pour devenir leader`);
     }
   }
 
   /**
-   * Become the leader
+   * Devenir le leader
    */
   private becomeLeader() {
     this.role = 'leader';
     this.leaderId = this.nodeId;
-    console.log(`[${this.nodeId}] 👑 Became LEADER for term ${this.term}`);
+    console.log(`[${this.nodeId}] 👑 Devenu LEADER pour le terme ${this.term}`);
 
-    // Immediately replicate to followers
+    // Répliquer immédiatement aux suiveurs
     this.replicateToFollowers();
   }
 
   /**
-   * Start heartbeat to followers
+   * Démarrer le heartbeat vers les suiveurs
    */
   private startHeartbeat() {
     this.heartbeatTimer = setInterval(() => {
@@ -324,7 +324,7 @@ class StoreNode {
   }
 
   /**
-   * Send heartbeat to all followers
+   * Envoyer le heartbeat à tous les suiveurs
    */
   private sendHeartbeat() {
     const heartbeat = {
@@ -336,15 +336,15 @@ class StoreNode {
 
     this.peers.forEach(peerUrl => {
       this.sendToPeer(peerUrl, '/internal/heartbeat', heartbeat)
-        .catch(err => console.log(`[${this.nodeId}] Failed to send heartbeat to ${peerUrl}:`, err.message));
+        .catch(err => console.log(`[${this.nodeId}] Échec de l'envoi du heartbeat à ${peerUrl}:`, err.message));
     });
   }
 
   /**
-   * Replicate data to all followers
+   * Répliquer les données à tous les suiveurs
    */
   private replicateToFollowers() {
-    // Convert Map to object for replication
+    // Convertir Map en objet pour la réplication
     const dataObj = Object.fromEntries(this.data);
 
     this.peers.forEach(peerUrl => {
@@ -353,12 +353,12 @@ class StoreNode {
         leaderId: this.nodeId,
         term: this.term,
         data: dataObj,
-      }).catch(err => console.log(`[${this.nodeId}] Replication failed to ${peerUrl}:`, err.message));
+      }).catch(err => console.log(`[${this.nodeId}] Réplication échouée vers ${peerUrl}:`, err.message));
     });
   }
 
   /**
-   * Handle heartbeat from leader
+   * Gérer le heartbeat du leader
    */
   handleHeartbeat(heartbeat: any) {
     if (heartbeat.term >= this.term) {
@@ -368,13 +368,13 @@ class StoreNode {
       this.role = 'follower';
 
       if (this.role !== 'follower') {
-        console.log(`[${this.nodeId}] Stepping down to follower, term ${this.term}`);
+        console.log(`[${this.nodeId}] Rétrogradation en suiveur, terme ${this.term}`);
       }
     }
   }
 
   /**
-   * Handle replication from leader
+   * Gérer la réplication du leader
    */
   handleReplication(message: any) {
     if (message.term >= this.term) {
@@ -383,17 +383,17 @@ class StoreNode {
       this.role = 'follower';
       this.lastHeartbeat = Date.now();
 
-      // Merge replicated data
+      // Fusionner les données répliquées
       Object.entries(message.data).forEach(([key, value]) => {
         this.data.set(key, value);
       });
 
-      console.log(`[${this.nodeId}] Replicated ${Object.keys(message.data).length} keys from leader`);
+      console.log(`[${this.nodeId}] ${Object.keys(message.data).length} clés répliquées depuis le leader`);
     }
   }
 
   /**
-   * Send data to peer node
+   * Envoyer des données à un nœud pair
    */
   private async sendToPeer(peerUrl: string, path: string, data: any): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -418,7 +418,7 @@ class StoreNode {
   }
 
   /**
-   * Set a key-value pair (only on leader)
+   * Définir une paire clé-valeur (seulement sur le leader)
    */
   set(key: string, value: any): boolean {
     if (this.role !== 'leader') {
@@ -428,14 +428,14 @@ class StoreNode {
     this.data.set(key, value);
     console.log(`[${this.nodeId}] SET ${key} = ${JSON.stringify(value)}`);
 
-    // Replicate to followers
+    // Répliquer aux suiveurs
     this.replicateToFollowers();
 
     return true;
   }
 
   /**
-   * Get a value by key
+   * Obtenir une valeur par clé
    */
   get(key: string): any {
     const value = this.data.get(key);
@@ -444,7 +444,7 @@ class StoreNode {
   }
 
   /**
-   * Delete a key
+   * Supprimer une clé
    */
   delete(key: string): boolean {
     if (this.role !== 'leader') {
@@ -454,14 +454,14 @@ class StoreNode {
     const existed = this.data.delete(key);
     console.log(`[${this.nodeId}] DELETE ${key} => ${existed ? 'success' : 'not found'}`);
 
-    // Replicate to followers
+    // Répliquer aux suiveurs
     this.replicateToFollowers();
 
     return existed;
   }
 
   /**
-   * Get node status
+   * Obtenir le statut du nœud
    */
   getStatus() {
     return {
@@ -475,11 +475,11 @@ class StoreNode {
   }
 }
 
-// Create the node
+// Créer le nœud
 const node = new StoreNode(config.nodeId, config.peers);
 
 /**
- * HTTP Server
+ * Serveur HTTP
  */
 const server = http.createServer((req, res) => {
   res.setHeader('Content-Type', 'application/json');
@@ -495,7 +495,7 @@ const server = http.createServer((req, res) => {
 
   const url = new URL(req.url || '', `http://${req.headers.host}`);
 
-  // Route: POST /internal/heartbeat - Leader heartbeat
+  // Route : POST /internal/heartbeat - Heartbeat du leader
   if (req.method === 'POST' && url.pathname === '/internal/heartbeat') {
     let body = '';
     req.on('data', chunk => body += chunk);
@@ -513,7 +513,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Route: POST /internal/replicate - Replication from leader
+  // Route : POST /internal/replicate - Réplication du leader
   if (req.method === 'POST' && url.pathname === '/internal/replicate') {
     let body = '';
     req.on('data', chunk => body += chunk);
@@ -531,14 +531,14 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Route: GET /status - Node status
+  // Route : GET /status - Statut du nœud
   if (req.method === 'GET' && url.pathname === '/status') {
     res.writeHead(200);
     res.end(JSON.stringify(node.getStatus()));
     return;
   }
 
-  // Route: GET /key/{key} - Get value
+  // Route : GET /key/{key} - Obtenir une valeur
   if (req.method === 'GET' && url.pathname.startsWith('/key/')) {
     const key = url.pathname.slice(5);
     const value = node.get(key);
@@ -553,7 +553,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Route: PUT /key/{key} - Set value (leader only)
+  // Route : PUT /key/{key} - Définir une valeur (leader uniquement)
   if (req.method === 'PUT' && url.pathname.startsWith('/key/')) {
     const key = url.pathname.slice(5);
 
@@ -583,7 +583,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Route: DELETE /key/{key} - Delete key (leader only)
+  // Route : DELETE /key/{key} - Supprimer une clé (leader uniquement)
   if (req.method === 'DELETE' && url.pathname.startsWith('/key/')) {
     const key = url.pathname.slice(5);
 
@@ -614,13 +614,13 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(config.port, () => {
-  console.log(`[${config.nodeId}] Store Node listening on port ${config.port}`);
-  console.log(`[${config.nodeId}] Peers: ${config.peers.join(', ') || 'none'}`);
-  console.log(`[${config.nodeId}] Available endpoints:`);
-  console.log(`  GET  /status          - Node status and role`);
-  console.log(`  GET  /key/{key}       - Get value`);
-  console.log(`  PUT  /key/{key}       - Set value (leader only)`);
-  console.log(`  DEL  /key/{key}       - Delete key (leader only)`);
+  console.log(`[${config.nodeId}] Store Node écoutant sur le port ${config.port}`);
+  console.log(`[${config.nodeId}] Pairs : ${config.peers.join(', ') || 'none'}`);
+  console.log(`[${config.nodeId}] Points de terminaison disponibles :`);
+  console.log(`  GET  /status          - Statut et rôle du nœud`);
+  console.log(`  GET  /key/{key}       - Obtenir une valeur`);
+  console.log(`  PUT  /key/{key}       - Définir une valeur (leader uniquement)`);
+  console.log(`  DEL  /key/{key}       - Supprimer une clé (leader uniquement)`);
 });
 ```
 
@@ -679,7 +679,7 @@ CMD ["npm", "start"]
 
 ---
 
-## Python Implementation
+## Implémentation Python
 
 **replicated-store-py/src/node.py**
 ```python
@@ -694,7 +694,7 @@ from urllib.request import Request, urlopen
 from urllib.error import URLError
 
 class StoreNode:
-    """Replicated store node with leader election."""
+    """Nœud de magasin répliqué avec élection de leader."""
 
     def __init__(self, node_id: str, peers: List[str]):
         self.node_id = node_id
@@ -706,34 +706,34 @@ class StoreNode:
         self.last_heartbeat = time.time()
 
         # Configuration
-        self.heartbeat_interval = 2.0  # seconds
-        self.election_timeout = 6.0     # seconds
+        self.heartbeat_interval = 2.0  # secondes
+        self.election_timeout = 6.0     # secondes
 
-        # Start election timer
+        # Démarrer le timer d'élection
         self.start_election_timer()
 
-        # Start heartbeat thread
+        # Démarrer le thread de heartbeat
         self.start_heartbeat_thread()
 
     def start_election_timer(self):
-        """Start election timeout timer."""
+        """Démarrer le timer de timeout d'élection."""
         def election_timer():
             while True:
                 time.sleep(1)
                 time_since = time.time() - self.last_heartbeat
                 if time_since > self.election_timeout and self.role != 'leader':
-                    print(f"[{self.node_id}] Election timeout! Starting election...")
+                    print(f"[{self.node_id}] Election timeout ! Démarrage de l'élection...")
                     self.start_election()
 
         thread = threading.Thread(target=election_timer, daemon=True)
         thread.start()
 
     def start_election(self):
-        """Start leader election (simplest: lowest ID wins)."""
+        """Démarrer l'élection de leader (le plus simple : l'ID le plus bas gagne)."""
         self.term += 1
         self.role = 'candidate'
 
-        # Simple strategy: lowest node ID becomes leader
+        # Stratégie simple : le nœud avec l'ID le plus bas devient leader
         all_nodes = sorted([self.node_id] + self.peers)
         lowest_node = all_nodes[0]
 
@@ -742,19 +742,19 @@ class StoreNode:
         else:
             self.role = 'follower'
             self.leader_id = lowest_node
-            print(f"[{self.node_id}] Waiting for {lowest_node} to become leader")
+            print(f"[{self.node_id}] En attente de {lowest_node} pour devenir leader")
 
     def become_leader(self):
-        """Become the leader."""
+        """Devenir le leader."""
         self.role = 'leader'
         self.leader_id = self.node_id
-        print(f"[{self.node_id}] 👑 Became LEADER for term {self.term}")
+        print(f"[{self.node_id}] 👑 Devenu LEADER pour le terme {self.term}")
 
-        # Immediately replicate to followers
+        # Répliquer immédiatement aux suiveurs
         self.replicate_to_followers()
 
     def start_heartbeat_thread(self):
-        """Start heartbeat to followers."""
+        """Démarrer le heartbeat vers les suiveurs."""
         def heartbeat_loop():
             while True:
                 time.sleep(self.heartbeat_interval)
@@ -765,7 +765,7 @@ class StoreNode:
         thread.start()
 
     def send_heartbeat(self):
-        """Send heartbeat to all followers."""
+        """Envoyer le heartbeat à tous les suiveurs."""
         heartbeat = {
             'type': 'heartbeat',
             'leader_id': self.node_id,
@@ -777,10 +777,10 @@ class StoreNode:
             try:
                 self.send_to_peer(peer, '/internal/heartbeat', heartbeat)
             except Exception as e:
-                print(f"[{self.node_id}] Failed to send heartbeat to {peer}: {e}")
+                print(f"[{self.node_id}] Échec de l'envoi du heartbeat à {peer} : {e}")
 
     def replicate_to_followers(self):
-        """Replicate data to all followers."""
+        """Répliquer les données à tous les suiveurs."""
         message = {
             'type': 'replicate',
             'leader_id': self.node_id,
@@ -792,33 +792,33 @@ class StoreNode:
             try:
                 self.send_to_peer(peer, '/internal/replicate', message)
             except Exception as e:
-                print(f"[{self.node_id}] Replication failed to {peer}: {e}")
+                print(f"[{self.node_id}] Réplication échouée vers {peer} : {e}")
 
     def handle_heartbeat(self, heartbeat: dict):
-        """Handle heartbeat from leader."""
+        """Gérer le heartbeat du leader."""
         if heartbeat['term'] >= self.term:
             self.term = heartbeat['term']
             self.last_heartbeat = time.time()
             self.leader_id = heartbeat['leader_id']
 
             if self.role != 'follower':
-                print(f"[{self.node_id}] Stepping down to follower, term {self.term}")
+                print(f"[{self.node_id}] Rétrogradation en suiveur, terme {self.term}")
             self.role = 'follower'
 
     def handle_replication(self, message: dict):
-        """Handle replication from leader."""
+        """Gérer la réplication du leader."""
         if message['term'] >= self.term:
             self.term = message['term']
             self.leader_id = message['leader_id']
             self.role = 'follower'
             self.last_heartbeat = time.time()
 
-            # Merge replicated data
+            # Fusionner les données répliquées
             self.data.update(message['data'])
-            print(f"[{self.node_id}] Replicated {len(message['data'])} keys from leader")
+            print(f"[{self.node_id}] {len(message['data'])} clés répliquées depuis le leader")
 
     def send_to_peer(self, peer_url: str, path: str, data: dict) -> None:
-        """Send data to peer node."""
+        """Envoyer des données à un nœud pair."""
         url = f"{peer_url}{path}"
         body = json.dumps(data).encode('utf-8')
 
@@ -828,26 +828,26 @@ class StoreNode:
                 raise Exception(f"Status {response.status}")
 
     def set(self, key: str, value: Any) -> bool:
-        """Set a key-value pair (only on leader)."""
+        """Définir une paire clé-valeur (seulement sur le leader)."""
         if self.role != 'leader':
             return False
 
         self.data[key] = value
         print(f"[{self.node_id}] SET {key} = {json.dumps(value)}")
 
-        # Replicate to followers
+        # Répliquer aux suiveurs
         self.replicate_to_followers()
 
         return True
 
     def get(self, key: str) -> Any:
-        """Get a value by key."""
+        """Obtenir une valeur par clé."""
         value = self.data.get(key)
         print(f"[{self.node_id}] GET {key} => {json.dumps(value) if value is not None else 'null'}")
         return value
 
     def delete(self, key: str) -> bool:
-        """Delete a key (only on leader)."""
+        """Supprimer une clé (seulement sur le leader)."""
         if self.role != 'leader':
             return False
 
@@ -857,13 +857,13 @@ class StoreNode:
 
         print(f"[{self.node_id}] DELETE {key} => {'success' if existed else 'not found'}")
 
-        # Replicate to followers
+        # Répliquer aux suiveurs
         self.replicate_to_followers()
 
         return existed
 
     def get_status(self) -> dict:
-        """Get node status."""
+        """Obtenir le statut du nœud."""
         return {
             'node_id': self.node_id,
             'role': self.role,
@@ -874,7 +874,7 @@ class StoreNode:
         }
 
 
-# Create the node
+# Créer le nœud
 config = {
     'node_id': os.environ.get('NODE_ID', 'node-1'),
     'port': int(os.environ.get('PORT', '4000')),
@@ -885,10 +885,10 @@ node = StoreNode(config['node_id'], config['peers'])
 
 
 class NodeHandler(BaseHTTPRequestHandler):
-    """HTTP request handler for store node."""
+    """Gestionnaire de requêtes HTTP pour le nœud de magasin."""
 
     def send_json_response(self, status: int, data: dict):
-        """Send a JSON response."""
+        """Envoyer une réponse JSON."""
         self.send_response(status)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Access-Control-Allow-Origin', '*')
@@ -896,7 +896,7 @@ class NodeHandler(BaseHTTPRequestHandler):
         self.wfile.write(json.dumps(data).encode())
 
     def do_OPTIONS(self):
-        """Handle CORS preflight."""
+        """Gérer le pré-vol CORS."""
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
@@ -904,7 +904,7 @@ class NodeHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
-        """Handle POST requests."""
+        """Gérer les requêtes POST."""
         parsed = urlparse(self.path)
 
         # POST /internal/heartbeat
@@ -936,7 +936,7 @@ class NodeHandler(BaseHTTPRequestHandler):
         self.send_json_response(404, {'error': 'Not found'})
 
     def do_GET(self):
-        """Handle GET requests."""
+        """Gérer les requêtes GET."""
         parsed = urlparse(self.path)
 
         # GET /status
@@ -946,7 +946,7 @@ class NodeHandler(BaseHTTPRequestHandler):
 
         # GET /key/{key}
         if parsed.path.startswith('/key/'):
-            key = parsed.path[5:]  # Remove '/key/'
+            key = parsed.path[5:]  # Retirer '/key/'
             value = node.get(key)
 
             if value is not None:
@@ -958,7 +958,7 @@ class NodeHandler(BaseHTTPRequestHandler):
         self.send_json_response(404, {'error': 'Not found'})
 
     def do_PUT(self):
-        """Handle PUT requests (set value)."""
+        """Gérer les requêtes POST (définir une valeur)."""
         parsed = urlparse(self.path)
 
         # PUT /key/{key}
@@ -987,7 +987,7 @@ class NodeHandler(BaseHTTPRequestHandler):
         self.send_json_response(404, {'error': 'Not found'})
 
     def do_DELETE(self):
-        """Handle DELETE requests."""
+        """Gérer les requêtes DELETE."""
         parsed = urlparse(self.path)
 
         # DELETE /key/{key}
@@ -1012,21 +1012,21 @@ class NodeHandler(BaseHTTPRequestHandler):
         self.send_json_response(404, {'error': 'Not found'})
 
     def log_message(self, format, *args):
-        """Suppress default logging."""
+        """Supprimer la journalisation par défaut."""
         pass
 
 
 def run_server(port: int):
-    """Start the HTTP server."""
+    """Démarrer le serveur HTTP."""
     server_address = ('', port)
     httpd = HTTPServer(server_address, NodeHandler)
-    print(f"[{config['node_id']}] Store Node listening on port {port}")
-    print(f"[{config['node_id']}] Peers: {', '.join(config['peers']) or 'none'}")
-    print(f"[{config['node_id']}] Available endpoints:")
-    print(f"  GET  /status          - Node status and role")
-    print(f"  GET  /key/{{key}}       - Get value")
-    print(f"  PUT  /key/{{key}}       - Set value (leader only)")
-    print(f"  DEL  /key/{{key}}       - Delete key (leader only)")
+    print(f"[{config['node_id']}] Store Node écoutant sur le port {port}")
+    print(f"[{config['node_id']}] Pairs : {', '.join(config['peers']) or 'none'}")
+    print(f"[{config['node_id']}] Points de terminaison disponibles :")
+    print(f"  GET  /status          - Statut et rôle du nœud")
+    print(f"  GET  /key/{{key}}       - Obtenir une valeur")
+    print(f"  PUT  /key/{{key}}       - Définir une valeur (leader uniquement)")
+    print(f"  DEL  /key/{{key}}       - Supprimer une clé (leader uniquement)")
     httpd.serve_forever()
 
 
@@ -1036,7 +1036,7 @@ if __name__ == '__main__':
 
 **replicated-store-py/requirements.txt**
 ```
-# No external dependencies - uses standard library only
+# Pas de dépendances externes - utilise uniquement la bibliothèque standard
 ```
 
 **replicated-store-py/Dockerfile**
@@ -1057,9 +1057,9 @@ CMD ["python", "src/node.py"]
 
 ---
 
-## Docker Compose Setup
+## Configuration Docker Compose
 
-### TypeScript Version
+### Version TypeScript
 
 **examples/02-store/ts/docker-compose.yml**
 ```yaml
@@ -1107,7 +1107,7 @@ networks:
     driver: bridge
 ```
 
-### Python Version
+### Version Python
 
 **examples/02-store/py/docker-compose.yml**
 ```yaml
@@ -1157,42 +1157,42 @@ networks:
 
 ---
 
-## Running the Example
+## Exécution de l'Exemple
 
-### Step 1: Start the 3-Node Cluster
+### Étape 1 : Démarrer le Cluster à 3 Nœuds
 
-**TypeScript:**
+**TypeScript :**
 ```bash
 cd distributed-systems-course/examples/02-store/ts
 docker-compose up --build
 ```
 
-**Python:**
+**Python :**
 ```bash
 cd distributed-systems-course/examples/02-store/py
 docker-compose up --build
 ```
 
-You should see leader election happen automatically:
+Vous devriez voir l'élection de leader se produire automatiquement :
 ```
-store-ts-node1 | [node-1] Store Node listening on port 4000
-store-ts-node2 | [node-2] Store Node listening on port 4000
-store-ts-node3 | [node-3] Store Node listening on port 4000
-store-ts-node1 | [node-1] 👑 Became LEADER for term 1
-store-ts-node2 | [node-2] Waiting for node-1 to become leader
-store-ts-node3 | [node-3] Waiting for node-1 to become leader
+store-ts-node1 | [node-1] Store Node écoutant sur le port 4000
+store-ts-node2 | [node-2] Store Node écoutant sur le port 4000
+store-ts-node3 | [node-3] Store Node écoutant sur le port 4000
+store-ts-node1 | [node-1] 👑 Devenu LEADER pour le terme 1
+store-ts-node2 | [node-2] En attente de node-1 pour devenir leader
+store-ts-node3 | [node-3] En attente de node-1 pour devenir leader
 ```
 
-### Step 2: Check Node Status
+### Étape 2 : Vérifier le Statut des Nœuds
 
 ```bash
-# Check all nodes
+# Vérifier tous les nœuds
 curl http://localhost:4001/status
 curl http://localhost:4002/status
 curl http://localhost:4003/status
 ```
 
-Response from node-1 (leader):
+Réponse du node-1 (leader) :
 ```json
 {
   "nodeId": "node-1",
@@ -1204,7 +1204,7 @@ Response from node-1 (leader):
 }
 ```
 
-Response from node-2 (follower):
+Réponse du node-2 (suiveur) :
 ```json
 {
   "nodeId": "node-2",
@@ -1216,10 +1216,10 @@ Response from node-2 (follower):
 }
 ```
 
-### Step 3: Write to Leader
+### Étape 3 : Écrire au Leader
 
 ```bash
-# Write to leader (node-1)
+# Écrire au leader (node-1)
 curl -X PUT http://localhost:4001/key/name \
   -H "Content-Type: application/json" \
   -d '"Alice"'
@@ -1233,7 +1233,7 @@ curl -X PUT http://localhost:4001/key/city \
   -d '"NYC"'
 ```
 
-Response:
+Réponse :
 ```json
 {
   "success": true,
@@ -1243,16 +1243,16 @@ Response:
 }
 ```
 
-### Step 4: Read from Followers
+### Étape 4 : Lire depuis les Suiveurs
 
-Data should be replicated to all followers:
+Les données devraient être répliquées à tous les suiveurs :
 
 ```bash
 curl http://localhost:4002/key/name
 curl http://localhost:4003/key/city
 ```
 
-Response:
+Réponse :
 ```json
 {
   "key": "name",
@@ -1261,7 +1261,7 @@ Response:
 }
 ```
 
-### Step 5: Try Writing to Follower (Should Fail)
+### Étape 5 : Essayer d'Écrire à un Suiveur (Devrait Échouer)
 
 ```bash
 curl -X PUT http://localhost:4002/key/test \
@@ -1269,7 +1269,7 @@ curl -X PUT http://localhost:4002/key/test \
   -d '"should fail"'
 ```
 
-Response:
+Réponse :
 ```json
 {
   "error": "Not the leader",
@@ -1278,43 +1278,43 @@ Response:
 }
 ```
 
-### Step 6: Simulate Leader Failure
+### Étape 6 : Simuler une Panne de Leader
 
 ```bash
-# In a separate terminal, stop the leader
+# Dans un terminal séparé, arrêter le leader
 docker-compose stop node1
 
-# Check node-2 status - should become new leader
+# Vérifier le statut de node-2 - devrait devenir le nouveau leader
 curl http://localhost:4002/status
 ```
 
-After a few seconds:
+Après quelques secondes :
 ```
-store-ts-node2 | [node-2] Election timeout! Starting election...
-store-ts-node2 | [node-2] 👑 Became LEADER for term 2
-store-ts-node3 | [node-3] Waiting for node-2 to become leader
+store-ts-node2 | [node-2] Election timeout ! Démarrage de l'élection...
+store-ts-node2 | [node-2] 👑 Devenu LEADER pour le terme 2
+store-ts-node3 | [node-3] En attente de node-2 pour devenir leader
 ```
 
-### Step 7: Write to New Leader
+### Étape 7 : Écrire au Nouveau Leader
 
 ```bash
-# Now node-2 is the leader
+# Maintenant node-2 est le leader
 curl -X PUT http://localhost:4002/key/newleader \
   -H "Content-Type: application/json" \
   -d '"node-2"'
 ```
 
-### Step 8: Restart Old Leader
+### Étape 8 : Redémarrer l'Ancien Leader
 
 ```bash
-# Restart node-1
+# Redémarrer node-1
 docker-compose start node1
 
-# Check status - should become follower
+# Vérifier le statut - devrait devenir suiveur
 curl http://localhost:4001/status
 ```
 
-Response:
+Réponse :
 ```json
 {
   "nodeId": "node-1",
@@ -1325,86 +1325,86 @@ Response:
 }
 ```
 
-## System Architecture
+## Architecture du Système
 
 ```mermaid
 graph TB
-    subgraph "3-Node Replicated Store"
+    subgraph "Magasin Répliqué à 3 Nœuds"
         Clients["Clients"]
 
         N1["Node 1<br/>👑 Leader"]
-        N2["Node 2<br/>Follower"]
-        N3["Node 3<br/>Follower"]
+        N2["Node 2<br/>Suiveur"]
+        N3["Node 3<br/>Suiveur"]
 
         Clients -->|"Write"| N1
         Clients -->|"Read"| N1
         Clients -->|"Read"| N2
         Clients -->|"Read"| N3
 
-        N1 <-->|"Heartbeat<br/>Replication"| N2
-        N1 <-->|"Heartbeat<br/>Replication"| N3
+        N1 <-->|"Heartbeat<br/>Réplication"| N2
+        N1 <-->|"Heartbeat<br/>Réplication"| N3
     end
 
     style N1 fill:#6f6,stroke:#333,stroke-width:3px
 ```
 
-## Exercises
+## Exercices
 
-### Exercise 1: Test Fault Tolerance
+### Exercice 1 : Tester la Tolérance aux Pannes
 
-1. Start the cluster and write some data
-2. Stop different nodes one at a time
-3. Verify the system continues operating
-4. What happens when you stop 2 out of 3 nodes?
+1. Démarrer le cluster et écrire quelques données
+2. Arrêter différents nœuds un par un
+3. Vérifier que le système continue de fonctionner
+4. Que se passe-t-il lorsque vous arrêtez 2 nœuds sur 3 ?
 
-### Exercise 2: Observe Replication Lag
+### Exercice 2 : Observer le Délai de Réplication
 
-1. Add a small delay (e.g., 100ms) to replication
-2. Write data to leader
-3. Immediately read from follower
-4. What do you see? This demonstrates **eventual consistency**.
+1. Ajouter un petit délai (par ex. 100ms) à la réplication
+2. Écrire des données au leader
+3. Lire immédiatement depuis un suiveur
+4. Que voyez-vous ? Cela démontre la **cohérence événementielle**.
 
-### Exercise 3: Improve Leader Election
+### Exercice 3 : Améliorer l'Élection de Leader
 
-The current election is very simple. Try improving it:
+L'élection actuelle est très simple. Essayez de l'améliorer :
 
-1. Add random election timeouts (like Raft)
-2. Implement actual voting (not just lowest ID)
-3. Add pre-vote to prevent disrupting current leader
+1. Ajouter des timeouts d'élection aléatoires (comme Raft)
+2. Implémenter un vrai vote (pas seulement le plus petit ID)
+3. Ajouter un pré-vote pour éviter de perturber le leader actuel
 
-## Summary
+## Résumé
 
-### Key Takeaways
+### Points Clés à Retenir
 
-1. **Replication** copies data across multiple nodes for fault tolerance
-2. **Single-leader replication** is simple but all writes go through leader
-3. **Leader election** ensures a new leader is chosen when current leader fails
-4. **Asynchronous replication** is fast but can lose data on leader failure
-5. **Read-your-writes consistency** is NOT guaranteed when reading from followers
+1. La **Réplication** copie les données sur plusieurs nœuds pour la tolérance aux pannes
+2. La **Réplication à leader unique** est simple mais toutes les écritures passent par le leader
+3. **L'élection de leader** assure qu'un nouveau leader est choisi quand le leader actuel tombe en panne
+4. La **Réplication asynchrone** est rapide mais peut perdre des données en cas de panne du leader
+5. La **Cohérence lecture-après-écriture** n'est PAS garantie lors de la lecture depuis les suiveurs
 
-### Trade-offs
+### Compromis
 
-| Approach | Pros | Cons |
-|----------|------|------|
-| Single-leader | Simple, strong consistency | Leader is bottleneck, single point of failure |
-| Multi-leader | No bottleneck, writes anywhere | Complex conflict resolution |
-| Sync replication | No data loss | Slow writes, blocking |
-| Async replication | Fast writes | Data loss possible, stale reads |
+| Approche | Avantages | Inconvénients |
+|----------|-----------|---------------|
+| Leader unique | Simple, cohérence forte | Le leader est un goulot d'étranglement, point de défaillance unique |
+| Multi-leader | Pas de goulot d'étranglement, écritures n'importe où | Résolution de conflits complexe |
+| Réplication synchrone | Aucune perte de données | Écritures lentes, bloquant |
+| Réplication asynchrone | Écritures rapides | Perte de données possible, lectures périmées |
 
-### Check Your Understanding
+### Vérifiez Votre Compréhension
 
-- [ ] Why do we replicate data?
-- [ ] What's the difference between leader and follower?
-- [ ] What happens when a client tries to write to a follower?
-- [ ] How does leader election work in our implementation?
-- [ ] What's the trade-off between sync and async replication?
+- [ ] Pourquoi répliquons-nous les données ?
+- [ ] Quelle est la différence entre leader et suiveur ?
+- [ ] Que se passe-t-il lorsqu'un client essaie d'écrire à un suiveur ?
+- [ ] Comment fonctionne l'élection de leader dans notre implémentation ?
+- [ ] Quel est le compromis entre la réplication synchrone et asynchrone ?
 
-## 🧠 Chapter Quiz
+## 🧠 Quiz du Chapitre
 
-Test your mastery of these concepts! These questions will challenge your understanding and reveal any gaps in your knowledge.
+Testez votre maîtrise de ces concepts ! Ces questions mettront au défi votre compréhension et révéleront toute lacune dans vos connaissances.
 
 {{#quiz ../../quizzes/data-store-replication.toml}}
 
-## What's Next
+## Suite
 
-We have replication working, but our consistency model is basic. Let's explore consistency levels: [Consistency Models](07-consistency.md) (Session 5)
+Nous avons une réplication fonctionnelle, mais notre modèle de cohérence est basique. Explorons les niveaux de cohérence : [Modèles de Cohérence](07-consistency.md) (Session 5)

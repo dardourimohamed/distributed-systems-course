@@ -1,14 +1,15 @@
 [[questions]]
 type = "MultipleChoice"
-prompt.prompt = "What's the main advantage of synchronous replication?"
-prompt.distractors = ["Faster writes", "Better durability", "Simpler implementation"]
-answer.answer = "Better durability"
-context = "Sync replication means data is safely on multiple nodes before confirmation. If leader crashes, data isn't lost. Trade-off: slower writes."
+prompt.prompt = "Quel est le principal avantage de la réplication synchrone ?"
+prompt.distractors = ["Écritures plus rapides", "Meilleure durabilité", "Implémentation plus simple"]
+answer.answer = "Meilleure durabilité"
+context = "La réplication synchrone signifie que les données sont en sécurité sur plusieurs nœuds avant confirmation. Si le leader plante, les données ne sont pas perdues. Compromis : écritures plus lentes."
 id = "33da255c-415e-4b69-bd64-3778d8a2b553"
 
 [[questions]]
 type = "ShortAnswer"
-prompt.prompt = "What's the process called when a leader fails and a follower is promoted?"
-answer.answer = "failover"
-context = "Failover is critical for availability—detecting failure, choosing a new leader, and reconfiguring the system."
+prompt.prompt = "Comment s'appelle le processus lorsqu'un leader échoue et qu'un suiveur est promu ?"
+answer.answer = "basculement"
+answer.alternatives = ["failover", "prise de relève"]
+context = "Le basculement est critique pour la disponibilité — détecter la défaillance, choisir un nouveau leader et reconfigurer le système."
 id = "763368c4-301d-437d-818d-128f2b29ecfc"

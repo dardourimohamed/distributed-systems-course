@@ -1,24 +1,24 @@
-# CAP Theorem
+# Théorème CAP
 
-> **Session 3, Part 2** - 30 minutes
+> **Session 3, Partie 2** - 30 minutes
 
-## Learning Objectives
+## Objectifs d'Apprentissage
 
-- [ ] Understand the CAP theorem and its three components
-- [ ] Explore the trade-offs between Consistency, Availability, and Partition tolerance
-- [ ] Identify real-world systems and their CAP choices
-- [ ] Learn how to apply CAP thinking to system design
+- [ ] Comprendre le théorème CAP et ses trois composantes
+- [ ] Explorer les compromis entre Cohérence, Disponibilité et Tolérance aux Partitions
+- [ ] Identifier les systèmes réels et leurs choix CAP
+- [ ] Apprendre à appliquer la pensée CAP à la conception de systèmes
 
-## What is the CAP Theorem?
+## Qu'est-ce que le Théorème CAP ?
 
-The **CAP theorem** states that a distributed data store can only provide **two** of the following three guarantees:
+Le **théorème CAP** stipule qu'un magasin de données distribué ne peut fournir que **deux** des trois garanties suivantes :
 
 ```mermaid
 graph TB
-    subgraph "CAP Triangle - Pick Two"
-        C["Consistency<br/>Every read receives<br/>the most recent write"]
-        A["Availability<br/>Every request receives<br/>a response"]
-        P["Partition Tolerance<br/>System operates<br/>despite network failures"]
+    subgraph "Triangle CAP - Choisissez-en Deux"
+        C["Cohérence<br/>Chaque lecture reçoit<br/>l'écriture la plus récente"]
+        A["Disponibilité<br/>Chaque requête reçoit<br/>une réponse"]
+        P["Tolérance aux Partitions<br/>Le système opère<br/>malgré les défaillances réseau"]
     end
 
     C <--> A
@@ -30,79 +30,79 @@ graph TB
     style P fill:#bbdefb
 ```
 
-## The Three Components
+## Les Trois Composantes
 
-### 1. Consistency (C)
+### 1. Cohérence (C)
 
-**Every read receives the most recent write or an error.**
+**Chaque lecture reçoit l'écriture la plus récente ou une erreur.**
 
-All nodes see the same data at the same time. If you write a value and immediately read it, you get the value you just wrote.
+Tous les nœuds voient les mêmes données au même moment. Si vous écrivez une valeur et la lisez immédiatement, vous obtenez la valeur que vous venez d'écrire.
 
 ```mermaid
 sequenceDiagram
     participant C as Client
-    participant N1 as Node 1
-    participant N2 as Node 2
-    participant N3 as Node 3
+    participant N1 as Nœud 1
+    participant N2 as Nœud 2
+    participant N3 as Nœud 3
 
-    C->>N1: Write X = 10
-    N1->>N2: Replicate X
-    N1->>N3: Replicate X
+    C->>N1: Écrire X = 10
+    N1->>N2: Répliquer X
+    N1->>N3: Répliquer X
     N2-->>N1: Ack
     N3-->>N1: Ack
-    N1-->>C: Write confirmed
+    N1-->>C: Écriture confirmée
 
-    Note over C,N3: Before reading...
+    Note over C,N3: Avant lecture...
 
-    C->>N2: Read X
-    N2-->>C: X = 10 (latest)
+    C->>N2: Lire X
+    N2-->>C: X = 10 (plus récent)
 
-    Note over C,N3: All nodes agree!
+    Note over C,N3: Tous les nœuds sont d'accord !
 ```
 
-**Example:** A bank system where your balance must be accurate across all branches.
+**Exemple :** Un système bancaire où votre solde doit être précis sur toutes les agences.
 
-### 2. Availability (A)
+### 2. Disponibilité (A)
 
-**Every request receives a (non-error) response, without the guarantee that it contains the most recent write.**
+**Chaque requête reçoit une réponse (non-erreur), sans garantie qu'elle contient l'écriture la plus récente.**
 
-The system remains operational even when some nodes fail. You can always read and write, even if the data might be stale.
+Le système reste opérationnel même lorsque certains nœuds échouent. Vous pouvez toujours lire et écrire, même si les données peuvent être obsolètes.
 
 ```mermaid
 sequenceDiagram
     participant C as Client
-    participant N1 as Node 1 (alive)
-    participant N2 as Node 2 (dead)
+    participant N1 as Nœud 1 (en vie)
+    participant N2 as Nœud 2 (mort)
 
-    C->>N1: Write X = 10
-    N1-->>C: Write confirmed
+    C->>N1: Écrire X = 10
+    N1-->>C: Écriture confirmée
 
-    Note over C,N2: N2 is down but N1 responds...
+    Note over C,N2: N2 est en panne mais N1 répond...
 
-    C->>N1: Read X
+    C->>N1: Lire X
     N1-->>C: X = 10
 
-    Note over C,N2: System stays available!
+    Note over C,N2: Le système reste disponible !
 ```
 
-**Example:** A social media feed where showing slightly old content is acceptable.
+**Exemple :** Un fil d'actualités sociales où montrer un contenu légèrement ancien est acceptable.
 
-### 3. Partition Tolerance (P)
+### 3. Tolérance aux Partitions (P)
 
-**The system continues to operate despite an arbitrary number of messages being dropped or delayed by the network between nodes.**
+**Le système continue à opérer malgré un nombre arbitraire de messages étant abandonnés ou retardés par le réseau entre les nœuds.**
 
-Network partitions are inevitable in distributed systems. The system must handle them gracefully.
+Les partitions réseau sont inévitables dans les systèmes distribués. Le système doit les gérer avec grâce.
 
 ```mermaid
 graph TB
-    subgraph "Network Partition"
-        N1["Node 1<br/>Can't reach N2, N3"]
-        N2["Node 2<br/>Can't reach N1"]
-        N3["Node 3<br/>Can't reach N1"]
+    subgraph "Partition Réseau"
+        N1["Nœud 1<br/>Ne peut atteindre N2, N3"]
+        N2["Nœud 2<br/>Ne peut atteindre N1"]
+        N3["Nœud 3<br/>Ne peut atteindre N1"]
     end
 
-    N1 -.->|"🔴 Network Partition"| N2
-    N1 -.->|"🔴 Network Partition"| N3
+    N1 -.->|"🔴 Partition Réseau"| N2
+    N1 -.->|"🔴 Partition Réseau"| N3
     N2 <--> N3
     N2 <--> N3
 
@@ -111,275 +111,275 @@ graph TB
     style N3 fill:#c8e6c9
 ```
 
-**Key Insight:** In distributed systems, **P is not optional**—network partitions WILL happen.
+**Aperçu Clé :** Dans les systèmes distribués, **P n'est pas optionnel** — les partitions réseau ARRIVERONT.
 
-## The Trade-offs
+## Les Compromis
 
-Since partitions are inevitable in distributed systems, the real choice is between **C** and **A** during a partition:
+Puisque les partitions sont inévitables dans les systèmes distribués, le vrai choix est entre **C** et **A** pendant une partition :
 
 ```mermaid
 stateDiagram-v2
     [*] --> Normal
-    Normal --> Partitioned: Network Split
-    Partitioned --> CP: Choose Consistency
-    Partitioned --> AP: Choose Availability
-    CP --> Normal: Partition heals
-    AP --> Normal: Partition heals
+    Normal --> Partitionné: Division Réseau
+    Partitionné --> CP: Choisir Cohérence
+    Partitionné --> AP: Choisir Disponibilité
+    CP --> Normal: Partition guérie
+    AP --> Normal: Partition guérie
 
     note right of CP
-        Reject writes/reads
-        until data syncs
+        Rejeter les écritures/lectures
+        jusqu'à la synchronisation des données
     end note
 
     note right of AP
-        Accept writes/reads
-        data may be stale
+        Accepter les écritures/lectures
+        les données peuvent être obsolètes
     end note
 ```
 
-### CP: Consistency + Partition Tolerance
+### CP : Cohérence + Tolérance aux Partitions
 
-**Sacrifice Availability**
+**Sacrifier la Disponibilité**
 
-During a partition, the system returns errors or blocks until consistency can be guaranteed.
+Pendant une partition, le système retourne des erreurs ou bloque jusqu'à ce que la cohérence puisse être garantie.
 
 ```mermaid
 sequenceDiagram
     participant C as Client
-    participant N1 as Node 1 (primary)
-    participant N2 as Node 2 (isolated)
+    participant N1 as Nœud 1 (primaire)
+    participant N2 as Nœud 2 (isolé)
 
-    Note over N1,N2: 🔴 Network Partition
+    Note over N1,N2: 🔴 Partition Réseau
 
-    C->>N1: Write X = 10
-    N1-->>C: ❌ Error: Cannot replicate
+    C->>N1: Écrire X = 10
+    N1-->>C: ❌ Erreur : Impossible de répliquer
 
-    C->>N2: Read X
-    N2-->>C: ❌ Error: Data unavailable
+    C->>N2: Lire X
+    N2-->>C: ❌ Erreur : Données indisponibles
 
-    Note over C,N2: System blocks rather<br/>than return stale data
+    Note over C,N2: Le système bloque plutôt<br/>que de retourner des données obsolètes
 ```
 
-**Examples:**
-- **MongoDB** (with majority write concern)
+**Exemples :**
+- **MongoDB** (avec souci d'écriture majoritaire)
 - **HBase**
-- **Redis** (with proper configuration)
-- **Traditional RDBMS** with synchronous replication
+- **Redis** (avec configuration appropriée)
+- **SGBD traditionnels** avec réplication synchrone
 
-**Use when:** Data accuracy is critical (financial systems, inventory)
+**Utiliser lorsque :** La précision des données est critique (systèmes financiers, inventaire)
 
-### AP: Availability + Partition Tolerance
+### AP : Disponibilité + Tolérance aux Partitions
 
-**Sacrifice Consistency**
+**Sacrifier la Cohérence**
 
-During a partition, the system accepts reads and writes, possibly returning stale data.
+Pendant une partition, le système accepte les lectures et écritures, pouvant retourner des données obsolètes.
 
 ```mermaid
 sequenceDiagram
     participant C as Client
-    participant N1 as Node 1 (accepts writes)
-    participant N2 as Node 2 (has old data)
+    participant N1 as Nœud 1 (accepte écritures)
+    participant N2 as Nœud 2 (a anciennes données)
 
-    Note over N1,N2: 🔴 Network Partition
+    Note over N1,N2: 🔴 Partition Réseau
 
-    C->>N1: Write X = 10
-    N1-->>C: ✅ OK (written to N1 only)
+    C->>N1: Écrire X = 10
+    N1-->>C: ✅ OK (écrit sur N1 seulement)
 
-    C->>N2: Read X
-    N2-->>C: ✅ X = 5 (stale!)
+    C->>N2: Lire X
+    N2-->>C: ✅ X = 5 (obsolète !)
 
-    Note over C,N2: System accepts requests<br/>but data is inconsistent
+    Note over C,N2: Le système accepte les requêtes<br/>mais les données sont incohérentes
 ```
 
-**Examples:**
+**Exemples :**
 - **Cassandra**
 - **DynamoDB**
 - **CouchDB**
 - **Riak**
 
-**Use when:** Always responding is more important than immediate consistency (social media, caching, analytics)
+**Utiliser lorsque :** Toujours répondre est plus important que la cohérence immédiate (médias sociaux, mise en cache, analyses)
 
-### CA: Consistency + Availability
+### CA : Cohérence + Disponibilité
 
-**Only possible in single-node systems**
+**Possible uniquement dans les systèmes à nœud unique**
 
-Without network partitions (single node or perfectly reliable network), you can have both C and A.
+Sans partitions réseau (nœud unique ou réseau parfaitement fiable), vous pouvez avoir à la fois C et A.
 
 ```mermaid
 graph TB
-    Single["Single Node Database"]
+    Single["Base de Données à Nœud Unique"]
     Client["Client"]
 
     Client --> Single
     Single <--> Client
 
-    Note1[No network = No partitions]
+    Note1[Pas de réseau = Pas de partitions]
     Note --> Single
 
     style Single fill:#fff9c4
 ```
 
-**Examples:**
-- Single-node PostgreSQL
-- Single-node MongoDB
-- Traditional RDBMS on one server
+**Exemples :**
+- PostgreSQL à nœud unique
+- MongoDB à nœud unique
+- SGBD traditionnels sur un serveur
 
-**Reality:** In distributed systems, CA is not achievable because networks are not perfectly reliable.
+**Réalité :** Dans les systèmes distribués, CA n'est pas achievable car les réseaux ne sont pas parfaitement fiables.
 
-## Real-World CAP Examples
+## Exemples CAP Réels
 
-| System | CAP Choice | Notes |
+| Système | Choix CAP | Notes |
 |--------|-----------|-------|
-| **Google Spanner** | CP | External consistency, always consistent |
-| **Amazon DynamoDB** | AP | Configurable consistency |
-| **Cassandra** | AP | Always writable, tunable consistency |
-| **MongoDB** | CP (default) | Configurable to AP |
-| **Redis Cluster** | AP | Async replication |
-| **PostgreSQL** | CA | Single-node mode |
-| **CockroachDB** | CP | Serializability, handles partitions |
-| **Couchbase** | AP | Cross Data Center Replication |
+| **Google Spanner** | CP | Cohérence externe, toujours cohérent |
+| **Amazon DynamoDB** | AP | Cohérence configurable |
+| **Cassandra** | AP | Toujours inscriptible, cohérence ajustable |
+| **MongoDB** | CP (par défaut) | Configurable en AP |
+| **Redis Cluster** | AP | Réplication asynchrone |
+| **PostgreSQL** | CA | Mode nœud unique |
+| **CockroachDB** | CP | Sérialisabilité, gère les partitions |
+| **Couchbase** | AP | Réplication Inter-Centres de Données |
 
-## Consistency Models
+## Modèles de Cohérence
 
-The CAP theorem's "Consistency" is actually **linearizability** (strong consistency). There are many consistency models:
+La "Cohérence" du théorème CAP est en fait la **linéarisabilité** (cohérence forte). Il existe plusieurs modèles de cohérence :
 
 ```mermaid
 graph TB
-    subgraph "Consistency Spectrum"
-        Strong["Strong Consistency<br/>Linearizability"]
-        Weak["Weak Consistency<br/>Eventual Consistency"]
+    subgraph "Spectre de Cohérence"
+        Strong["Cohérence Forte<br/>Linéarisabilité"]
+        Weak["Cohérence Faible<br/>Cohérence Finale"]
 
-        Strong --> S1["Sequential<br/>Consistency"]
-        S1 --> S2["Causal<br/>Consistency"]
-        S2 --> S3["Session<br/>Consistency"]
-        S3 --> S4["Read Your<br/>Writes"]
+        Strong --> S1["Cohérence<br/>Séquentielle"]
+        S1 --> S2["Cohérence<br/>Causale"]
+        S2 --> S3["Cohérence de<br/>Session"]
+        S3 --> S4["Lire Vos<br/>Écritures"]
         S4 --> Weak
     end
 ```
 
-### Strong Consistency Models
+### Modèles de Cohérence Forte
 
-| Model | Description | Example |
+| Modèle | Description | Exemple |
 |-------|-------------|---------|
-| **Linearizable** | Most recent read guaranteed | Bank transfers |
-| **Sequential** | Operations appear in some order | Version control |
-| **Causal** | Causally related operations ordered | Chat applications |
+| **Linéarisable** | Lecture la plus récente garantie | Transferts bancaires |
+| **Séquentielle** | Les opérations apparaissent dans un certain ordre | Contrôle de version |
+| **Causale** | Opérations causalement liées ordonnées | Applications de chat |
 
-### Weak Consistency Models
+### Modèles de Cohérence Faible
 
-| Model | Description | Example |
+| Modèle | Description | Exemple |
 |-------|-------------|---------|
-| **Read Your Writes** | User sees their own writes | Social media profile |
-| **Session Consistency** | Consistency within a session | Shopping cart |
-| **Eventual Consistency** | System converges over time | DNS, CDN |
+| **Lire Vos Écritures** | L'utilisateur voit ses propres écritures | Profil de médias sociaux |
+| **Cohérence de Session** | Cohérence dans une session | Panier d'achat |
+| **Cohérence Finale** | Le système converge au fil du temps | DNS, CDN |
 
-## Practical Example: Shopping Cart
+## Exemple Pratique : Panier d'Achat
 
-Let's see how different CAP choices affect a shopping cart system:
+Voyons comment différents choix CAP affectent un système de panier d'achat :
 
-### CP Approach (Block on Partition)
+### Approche CP (Bloquer sur Partition)
 
 ```mermaid
 sequenceDiagram
-    participant U as User
+    participant U as Utilisateur
     participant S as Service
 
-    Note over U,S: 🔴 Network partition detected
+    Note over U,S: 🔴 Partition réseau détectée
 
-    U->>S: Add item to cart
-    S-->>U: ❌ Error: Service unavailable
+    U->>S: Ajouter article au panier
+    S-->>U: ❌ Erreur : Service indisponible
 
-    Note over U,S: User frustrated,<br/>but cart is always accurate
+    Note over U,S: Utilisateur frustré,<br/>mais panier est toujours précis
 ```
 
-**Trade-off:** Lost sales, accurate cart
+**Compromis :** Ventes perdues, panier précis
 
-### AP Approach (Accept Writes)
+### Approche AP (Accepter Écritures)
 
 ```mermaid
 sequenceDiagram
-    participant U as User
+    participant U as Utilisateur
     participant S as Service
 
-    Note over U,S: 🔴 Network partition detected
+    Note over U,S: 🔴 Partition réseau détectée
 
-    U->>S: Add item to cart
-    S-->>U: ✅ OK (written locally)
+    U->>S: Ajouter article au panier
+    S-->>U: ✅ OK (écrit localement)
 
-    Note over U,S: User happy,<br/>but cart might conflict
+    Note over U,S: Utilisateur satisfait,<br/>mais panier peut être en conflit
 ```
 
-**Trade-off:** Happy users, possible merge conflicts later
+**Compromis :** Utilisateurs satisfaits, conflits de fusion possibles ultérieurement
 
-## The "2 of 3" Simplification
+## La Simplification "2 sur 3"
 
-The CAP theorem is often misunderstood. The reality is more nuanced:
+Le théorème CAP est souvent mal compris. La réalité est plus nuancée :
 
 ```mermaid
 graph TB
-    subgraph "CAP Reality"
-        CAP["CAP Theorem"]
+    subgraph "Réalité CAP"
+        CAP["Théorème CAP"]
 
-        CAP --> Misconception["You must choose<br/>exactly 2"]
-        CAP --> Reality["You can have all 3<br/>in normal operation"]
-        CAP --> Truth["During partition,<br/>choose C or A"]
+        CAP --> Malcompréhension["Vous devez choisir<br/>exactement 2"]
+        CAP --> Réalité["Vous pouvez avoir les 3<br/>en opération normale"]
+        CAP --> Vérité["Pendant partition,<br/>choisir C ou A"]
     end
 ```
 
-**Key Insights:**
-1. **P is mandatory** in distributed systems
-2. During normal operation, you can have C + A + P
-3. During a partition, you choose between C and A
-4. Many systems are **configurable** (e.g., DynamoDB)
+**Aperçus Clés :**
+1. **P est obligatoire** dans les systèmes distribués
+2. Pendant l'opération normale, vous pouvez avoir C + A + P
+3. Pendant une partition, vous choisissez entre C et A
+4. Plusieurs systèmes sont **configurables** (par exemple, DynamoDB)
 
-## Design Guidelines
+## Directives de Conception
 
-### Choose CP When:
+### Choisir CP Lorsque :
 
-- ✅ Financial transactions
-- ✅ Inventory management
-- ✅ Authentication/authorization
-- ✅ Any system where stale data is unacceptable
+- ✅ Transactions financières
+- ✅ Gestion d'inventaire
+- ✅ Authentification/autorisation
+- ✅ Tout système où les données obsolètes sont inacceptables
 
-### Choose AP When:
+### Choisir AP Lorsque :
 
-- ✅ Social media feeds
-- ✅ Product recommendations
-- ✅ Analytics and logging
-- ✅ Any system where availability is critical
+- ✅ Fils d'actualités sociaux
+- ✅ Recommandations de produits
+- ✅ Analyses et journalisation
+- ✅ Tout système où la disponibilité est critique
 
-### Techniques to Balance C and A:
+### Techniques pour Équilibrer C et A :
 
-| Technique | Description | Example |
+| Technique | Description | Exemple |
 |-----------|-------------|---------|
-| **Quorum reads/writes** | Require majority acknowledgment | DynamoDB |
-| **Tunable consistency** | Let client choose per operation | Cassandra |
-| **Graceful degradation** | Switch modes during partition | Many systems |
-| **Conflict resolution** | Merge divergent data later | CRDTs |
+| **Lectures/écritures de quorum** | Nécessite une reconnaissance majoritaire | DynamoDB |
+| **Cohérence ajustable** | Laisser le client choisir par opération | Cassandra |
+| **Dégradation gracieuse** | Changer de modes pendant partition | Plusieurs systèmes |
+| **Résolution de conflits** | Fusionner les données divergentes ultérieurement | CRDTs |
 
-## Summary
+## Résumé
 
-### Key Takeaways
+### Points Clés à Retenir
 
-1. **CAP theorem:** You can't have all three in a partition
-2. **Partition tolerance is mandatory** in distributed systems
-3. **Real choice:** Consistency vs Availability during partition
-4. **Many systems offer tunable** consistency levels
-5. **Your use case determines** the right trade-off
+1. **Théorème CAP :** Vous ne pouvez pas avoir les trois dans une partition
+2. **La tolérance aux partitions est obligatoire** dans les systèmes distribués
+3. **Le vrai choix :** Cohérence vs Disponibilité pendant partition
+4. **Plusieurs systèmes offrent des** niveaux de cohérence ajustables
+5. **Votre cas d'utilisation détermine** le bon compromis
 
-### Check Your Understanding
+### Vérifiez Votre Compréhension
 
-- [ ] Why is partition tolerance not optional in distributed systems?
-- [ ] Give an example where you would choose CP over AP
-- [ ] What happens to an AP system during a network partition?
-- [ ] How can quorum reads/writes help balance C and A?
+- [ ] Pourquoi la tolérance aux partitions n'est-elle pas optionnelle dans les systèmes distribués ?
+- [ ] Donnez un exemple où vous choisiriez CP plutôt que AP
+- [ ] Qu'arrive-t-il à un système AP pendant une partition réseau ?
+- [ ] Comment les lectures/écritures de quorum peuvent-elles aider à équilibrer C et A ?
 
-## 🧠 Chapter Quiz
+## 🧠 Quiz du Chapitre
 
-Test your mastery of these concepts! These questions will challenge your understanding and reveal any gaps in your knowledge.
+Testez votre maîtrise de ces concepts ! Ces questions mettront au défi votre compréhension et révéleront toute lacune dans vos connaissances.
 
 {{#quiz ../../quizzes/data-store-cap-theorem.toml}}
 
-## What's Next
+## Et Ensuite
 
-Now that we understand CAP trade-offs, let's build a simple key-value store: [Store Basics](./03-store-basics.md)
+Maintenant que nous comprenons les compromis CAP, construisons un simple magasin clé-valeur : [Bases du Magasin](./03-store-basics.md)

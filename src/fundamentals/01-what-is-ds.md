@@ -1,29 +1,29 @@
-# What is a Distributed System?
+# Qu'est-ce qu'un Système Distribué ?
 
-> **Session 1, Part 1** - 20 minutes
+> **Session 1, Partie 1** - 20 minutes
 
-## Learning Objectives
+## Objectifs d'Apprentissage
 
-- [ ] Define what a distributed system is
-- [ ] Identify key characteristics of distributed systems
-- [ ] Understand why distributed systems matter
-- [ ] Recognize distributed systems in everyday life
+- [ ] Définir ce qu'est un système distribué
+- [ ] Identifier les caractéristiques clés des systèmes distribués
+- [ ] Comprendre pourquoi les systèmes distribués sont importants
+- [ ] Reconnaître les systèmes distribués dans la vie quotidienne
 
-## Definition
+## Définition
 
-A **distributed system** is a collection of independent computers that appears to its users as a single coherent system.
+Un **système distribué (distributed system)** est une collection d'ordinateurs indépendants qui apparaît à ses utilisateurs comme un système cohérent unique.
 
 ```mermaid
 graph TB
-    subgraph "Users See"
-        Single["Single System"]
+    subgraph "Utilisateurs Voient"
+        Single["Système Unique"]
     end
 
-    subgraph "Reality"
-        N1["Node 1"]
-        N2["Node 2"]
-        N3["Node 3"]
-        N4["Node N"]
+    subgraph "Réalité"
+        N1["Nœud 1"]
+        N2["Nœud 2"]
+        N3["Nœud 3"]
+        N4["Nœud N"]
 
         N1 <--> N2
         N2 <--> N3
@@ -31,95 +31,95 @@ graph TB
         N4 <--> N1
     end
 
-    Single -->|"appears as"| N1
-    Single -->|"appears as"| N2
-    Single -->|"appears as"| N3
+    Single -->|"apparaît comme"| N1
+    Single -->|"apparaît comme"| N2
+    Single -->|"apparaît comme"| N3
 ```
 
-### Key Insight
+### Idée Clé
 
-The defining characteristic is the **illusion of unity**—users interact with what seems like one system, while behind the scenes, multiple machines work together.
+La caractéristique déterminante est l'**illusion d'unité** — les utilisateurs interagissent avec ce qui semble être un seul système, tandis qu'en coulisses, plusieurs machines travaillent ensemble.
 
-## Three Key Characteristics
+## Trois Caractéristiques Clés
 
-According to Leslie Lamport, a distributed system is:
+Selon Leslie Lamport, un système distribué est :
 
-> "One in which the failure of a computer you didn't even know existed can render your own computer unusable."
+> "Un système dans lequel la défaillance d'un ordinateur dont vous ignoriez même l'existence peut rendre votre propre ordinateur inutilisable."
 
-This definition highlights three fundamental characteristics:
+Cette définition met en évidence trois caractéristiques fondamentales :
 
-### 1. Concurrency (Multiple Things Happen At Once)
+### 1. Concurrence (Plusieurs Choses Se Produisent En Même Temps)
 
-Multiple components execute simultaneously, leading to complex interactions.
+Plusieurs composants s'exécutent simultanément, entraînant des interactions complexes.
 
 ```mermaid
 sequenceDiagram
-    participant U as User
-    participant A as Server A
-    participant B as Server B
-    participant C as Server C
+    participant U as Utilisateur
+    participant A as Serveur A
+    participant B as Serveur B
+    participant C as Serveur C
 
-    U->>A: Request
-    A->>B: Query
-    A->>C: Update
-    B-->>A: Response
-    C-->>A: Ack
-    A-->>U: Result
+    U->>A: Requête
+    A->>B: Requête
+    A->>C: Mise à jour
+    B-->>A: Réponse
+    C-->>A: Accusé
+    A-->>U: Résultat
 ```
 
-### 2. No Global Clock
+### 2. Pas d'Horloge Globale
 
-Each node has its own clock. There's no single "now" across the system.
+Chaque nœud a sa propre horloge. Il n'y a pas de "maintenant" unique dans le système.
 
 ```mermaid
 graph LR
-    A[Clock A: 10:00:01.123]
-    B[Clock B: 10:00:02.456]
-    C[Clock C: 09:59:59.789]
+    A[Horloge A : 10:00:01.123]
+    B[Horloge B : 10:00:02.456]
+    C[Horloge C : 09:59:59.789]
 
-    A -.->|network latency| B
-    B -.->|network latency| C
-    C -.->|network latency| A
+    A -.->|latence réseau| B
+    B -.->|latence réseau| C
+    C -.->|latence réseau| A
 ```
 
-**Implication:** You can't rely on timestamps to order events across nodes. You need logical clocks (more on this in later sessions!).
+**Implication :** Vous ne pouvez pas compter sur les horodatages pour ordonner les événements entre les nœuds. Vous avez besoin d'horloges logiques (nous en reparlerons dans les prochaines sessions !).
 
-### 3. Independent Failure
+### 3. Défaillance Indépendante
 
-Components can fail independently. When one part fails, the rest may continue—or may become unusable.
+Les composants peuvent tomber en panne indépendamment. Lorsqu'une partie tombe en panne, le reste peut continuer — ou peut devenir inutilisable.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> AllHealthy: System Start
-    AllHealthy --> PartialFailure: One Node Fails
-    AllHealthy --> CompleteFailure: Critical Nodes Fail
-    PartialFailure --> AllHealthy: Recovery
-    PartialFailure --> CompleteFailure: Cascading Failure
-    CompleteFailure --> [*]
+    [*] --> TousSains: Démarrage Système
+    TousSains --> DéfaillancePartielle: Un Nœud Tombe en Panne
+    TousSains --> DéfaillanceComplète: Nœuds Critiques Tombent en Panne
+    DéfaillancePartielle --> TousSains: Récupération
+    DéfaillancePartielle --> DéfaillanceComplète: Défaillance en Cascade
+    DéfaillanceComplète --> [*]
 ```
 
-## Why Distributed Systems?
+## Pourquoi des Systèmes Distribués ?
 
-### Scalability
+### Extensibilité
 
-**Vertical Scaling (Scale Up):**
-- Add more resources to a single machine
-- Eventually hits hardware/cost limits
+**Mise à l'échelle Verticale (Scale Up) :**
+- Ajouter plus de ressources à une seule machine
+- Finit par atteindre les limites matérielles/coût
 
-**Horizontal Scaling (Scale Out):**
-- Add more machines to the system
-- Virtually unlimited scaling potential
+**Mise à l'échelle Horizontale (Scale Out) :**
+- Ajouter plus de machines au système
+- Potentiel d'extensibilité pratiquement illimité
 
 ```mermaid
 graph TB
-    subgraph "Vertical Scaling"
-        Big[Big Expensive Server<br/>$100,000]
+    subgraph "Mise à l'échelle Verticale"
+        Big[Gros Serveur Coûteux<br/>100 000 $]
     end
 
-    subgraph "Horizontal Scaling"
-        S1[Commodity Server<br/>$1,000]
-        S2[Commodity Server<br/>$1,000]
-        S3[Commodity Server<br/>$1,000]
+    subgraph "Mise à l'échelle Horizontale"
+        S1[Serveur Standard<br/>1 000 $]
+        S2[Serveur Standard<br/>1 000 $]
+        S3[Serveur Standard<br/>1 000 $]
         S4[...]
     end
 
@@ -128,43 +128,43 @@ graph TB
     Big <--> S3
 ```
 
-### Reliability & Availability
+### Fiabilité et Disponibilité
 
-A single point of failure is unacceptable for critical services:
+Un point unique de défaillance est inacceptable pour les services critiques :
 
 ```mermaid
 graph TB
-    subgraph "Single System"
-        S[Single Server]
-        S -.-> X[❌ Failure = No Service]
+    subgraph "Système Unique"
+        S[Serveur Unique]
+        S -.-> X[❌ Défaillance = Pas de Service]
     end
 
-    subgraph "Distributed System"
-        N1[Node 1]
-        N2[Node 2]
-        N3[Node 3]
+    subgraph "Système Distribué"
+        N1[Nœud 1]
+        N2[Nœud 2]
+        N3[Nœud 3]
 
         N1 <--> N2
         N2 <--> N3
         N3 <--> N1
 
-        N1 -.-> X2[❌ One Fails]
-        X2 --> OK[✓ Others Continue]
+        N1 -.-> X2[❌ Un Tombe en Panne]
+        X2 --> OK[✓ Les Autres Continuent]
     end
 ```
 
-### Latency (Geographic Distribution)
+### Latence (Distribution Géographique)
 
-Placing data closer to users improves experience:
+Placer les données plus près des utilisateurs améliore l'expérience :
 
 ```mermaid
 graph TB
-    User[User in NYC]
+    User[Utilisateur à New York]
 
-    subgraph "Global Distribution"
-        NYC[NYC Datacenter<br/>10ms latency]
-        LON[London Datacenter<br/>70ms latency]
-        TKY[Tokyo Datacenter<br/>150ms latency]
+    subgraph "Distribution Globale"
+        NYC[Centre de Données NYC<br/>latence 10ms]
+        LON[Centre de Données Londres<br/>latence 70ms]
+        TKY[Centre de Données Tokyo<br/>latence 150ms]
     end
 
     User --> NYC
@@ -176,81 +176,81 @@ graph TB
     TKY <--> NYC
 ```
 
-## Examples of Distributed Systems
+## Exemples de Systèmes Distribués
 
-### Everyday Examples
+### Exemples Quotidiens
 
-| System | Description | Benefit |
+| Système | Description | Avantage |
 |--------|-------------|---------|
-| **Web Search** | Query servers, index servers, cache servers | Fast responses, always available |
-| **Streaming Video** | Content delivery networks (CDNs) | Low latency, high quality |
-| **Online Shopping** | Product catalog, cart, payment, inventory | Handles traffic spikes |
-| **Social Media** | Posts, comments, likes, notifications | Real-time updates |
+| **Recherche Web** | Serveurs de requêtes, serveurs d'index, serveurs de cache | Réponses rapides, toujours disponibles |
+| **Vidéo en Streaming** | Réseaux de diffusion de contenu (CDNs) | Faible latence, haute qualité |
+| **Achats en Ligne** | Catalogue de produits, panier, paiement, inventaire | Gère les pics de trafic |
+| **Réseaux Sociaux** | Publications, commentaires, j'aime, notifications | Mises à jour en temps réel |
 
-### Technical Examples
+### Exemples Techniques
 
-**Database Replication:**
+**Réplication de Base de Données :**
 ```mermaid
 graph LR
-    W[Write to Primary] --> P[(Primary DB)]
-    P --> R1[(Replica 1)]
-    P --> R2[(Replica 2)]
-    P --> R3[(Replica 3)]
-    R1 --> Read1[Read from Replica]
-    R2 --> Read2[Read from Replica]
-    R3 --> Read3[Read from Replica]
+    W[Écrire sur le Primaire] --> P[(DB Primaire)]
+    P --> R1[(Réplique 1)]
+    P --> R2[(Réplique 2)]
+    P --> R3[(Réplique 3)]
+    R1 --> Read1[Lire depuis la Réplique]
+    R2 --> Read2[Lire depuis la Réplique]
+    R3 --> Read3[Lire depuis la Réplique]
 ```
 
-**Load Balancing:**
+**Répartition de Charge :**
 ```mermaid
 graph TB
-    Users[Users]
-    LB[Load Balancer]
+    Users[Utilisateurs]
+    LB[Répartiteur de Charge]
 
     Users --> LB
-    LB --> S1[Server 1]
-    LB --> S2[Server 2]
-    LB --> S3[Server 3]
-    LB --> S4[Server N]
+    LB --> S1[Serveur 1]
+    LB --> S2[Serveur 2]
+    LB --> S3[Serveur 3]
+    LB --> S4[Serveur N]
 ```
 
-## Trade-offs
+## Compromis
 
-Distributed systems introduce complexity:
+Les systèmes distribués introduisent de la complexité :
 
-| Challenge | Description |
+| Défi | Description |
 |-----------|-------------|
-| **Network Issues** | Unreliable, variable latency, partitions |
-| **Concurrency** | Race conditions, deadlocks, coordination |
-| **Partial Failures** | Some components work, others don't |
-| **Consistency** | Keeping data in sync across nodes |
+| **Problèmes Réseau** | Non fiable, latence variable, partitions |
+| **Concurrence** | Conditions de course, interblocages, coordination |
+| **Défaillances Partielles** | Certains composants fonctionnent, d'autres non |
+| **Cohérence** | Garder les données synchronisées entre les nœuds |
 
-**The Fundamental Dilemma:**
-> "Is the benefits of distribution worth the added complexity?"
+**Le Dilemme Fondamental :**
+> "Les avantages de la distribution valent-ils la complexité ajoutée ?"
 
-For most modern applications, the answer is **yes**—which is why we're learning this!
+Pour la plupart des applications modernes, la réponse est **oui** — c'est pourquoi nous apprenons ceci !
 
-## Summary
+## Résumé
 
-### Key Takeaways
+### Points Clés à Retenir
 
-1. **Distributed systems** = multiple computers acting as one
-2. **Three characteristics:** concurrency, no global clock, independent failure
-3. **Benefits:** scalability, reliability, lower latency
-4. **Costs:** complexity, network issues, consistency challenges
+1. **Systèmes distribués** = plusieurs ordinateurs agissant comme un seul
+2. **Trois caractéristiques :** concurrence, pas d'horloge globale, défaillance indépendante
+3. **Avantages :** extensibilité, fiabilité, latence réduite
+4. **Coûts :** complexité, problèmes réseau, défis de cohérence
 
-### Check Your Understanding
+### Vérifiez Votre Compréhension
 
-- [ ] Can you explain why there's no global clock in a distributed system?
-- [ ] Give an example of a distributed system you use daily
-- [ ] Why does independent failure make distributed systems harder to build?
+- [ ] Pouvez-vous expliquer pourquoi il n'y a pas d'horloge globale dans un système distribué ?
+- [ ] Donnez un exemple de système distribué que vous utilisez quotidiennement
+- [ ] Pourquoi la défaillance indépendante rend-elle les systèmes distribués plus difficiles à construire ?
 
-## 🧠 Chapter Quiz
+## 🧠 Quiz du Chapitre
 
-Test your mastery of these concepts! These questions will challenge your understanding and reveal any gaps in your knowledge.
+Testez votre maîtrise de ces concepts ! Ces questions mettront au défi votre compréhension et révéleront les lacunes dans vos connaissances.
 
 {{#quiz ../../quizzes/fundamentals-what-is-ds.toml}}
 
-## What's Next
+## Suite
 
-Now that we understand what distributed systems are, let's explore how they communicate: [Message Passing](./02-message-passing.md)
+Maintenant que nous comprenons ce que sont les systèmes distribués, explorons comment ils communiquent : [Passage de Messages](./02-message-passing.md)

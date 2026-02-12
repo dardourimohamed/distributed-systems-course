@@ -1,83 +1,83 @@
-# Data Partitioning
+# Partitionnement des Données
 
-> **Session 3, Part 1** - 25 minutes
+> **Session 3, Partie 1** - 25 minutes
 
-## Learning Objectives
+## Objectifs d'Apprentissage
 
-- [ ] Understand what data partitioning (sharding) is
-- [ ] Compare hash-based vs range-based partitioning
-- [ ] Learn how partitioning affects query performance
-- [ ] Recognize the trade-offs of different partitioning strategies
+- [ ] Comprendre ce qu'est le partitionnement des données (sharding)
+- [ ] Comparer le partitionnement basé sur le hachage vs par plage
+- [ ] Apprendre comment le partitionnement affecte les performances des requêtes
+- [ ] Reconnaître les compromis des différentes stratégies de partitionnement
 
-## What is Partitioning?
+## Qu'est-ce que le Partitionnement ?
 
-**Data partitioning** (also called **sharding**) is the process of splitting your data across multiple nodes based on a partitioning key. Each node holds a subset of the total data.
+Le **partitionnement des données** (aussi appelé **sharding**) est le processus de répartition de vos données sur plusieurs nœuds basé sur une clé de partitionnement. Chaque nœud contient un sous-ensemble des données totales.
 
 ```mermaid
 graph TB
-    subgraph "Application View"
-        App["Your Application"]
-        Data[("All Data")]
+    subgraph "Vue de l'Application"
+        App["Votre Application"]
+        Data[("Toutes les Données")]
         App --> Data
     end
 
-    subgraph "Reality: Partitioned Storage"
-        Node1["Node 1<br/>Keys: user_1<br/>user_4<br/>user_7"]
-        Node2["Node 2<br/>Keys: user_2<br/>user_5<br/>user_8"]
-        Node3["Node 3<br/>Keys: user_3<br/>user_6<br/>user_9"]
+    subgraph "Réalité : Stockage Partitionné"
+        Node1["Nœud 1<br/>Clés : user_1<br/>user_4<br/>user_7"]
+        Node2["Nœud 2<br/>Clés : user_2<br/>user_5<br/>user_8"]
+        Node3["Nœud 3<br/>Clés : user_3<br/>user_6<br/>user_9"]
     end
 
-    App -->|"read/write"| Node1
-    App -->|"read/write"| Node2
-    App -->|"read/write"| Node3
+    App -->|"lecture/écriture"| Node1
+    App -->|"lecture/écriture"| Node2
+    App -->|"lecture/écriture"| Node3
 
     style Node1 fill:#e1f5fe
     style Node2 fill:#e1f5fe
     style Node3 fill:#e1f5fe
 ```
 
-### Why Partition Data?
+### Pourquoi Partitionner les Données ?
 
-| Benefit | Description |
+| Avantage | Description |
 |---------|-------------|
-| **Scalability** | Store more data than fits on one machine |
-| **Performance** | Distribute load across multiple nodes |
-| **Availability** | One partition failure doesn't affect others |
+| **Mise à l'échelle** | Stocker plus de données que ce qui tient sur une seule machine |
+| **Performance** | Distribuer la charge sur plusieurs nœuds |
+| **Disponibilité** | La défaillance d'une partition n'affecte pas les autres |
 
-### The Partitioning Challenge
+### Le Défi du Partitionnement
 
-The key question is: **How do we decide which data goes on which node?**
+La question clé est : **Comment décider quelles données vont sur quel nœud ?**
 
 ```mermaid
 graph LR
-    Key["user:12345"] --> Router{Partitioning<br/>Function}
-    Router -->|"hash(key) % N"| N1[Node 1]
-    Router --> N2[Node 2]
-    Router --> N3[Node 3]
+    Key["user:12345"] --> Router{Fonction de<br/>Partitionnement}
+    Router -->|"hash(clé) % N"| N1[Nœud 1]
+    Router --> N2[Nœud 2]
+    Router --> N3[Nœud 3]
 
     style Router fill:#ff9,stroke:#333,stroke-width:3px
 ```
 
-## Partitioning Strategies
+## Stratégies de Partitionnement
 
-### 1. Hash-Based Partitioning
+### 1. Partitionnement Basé sur le Hachage
 
-Apply a hash function to the key, then modulo the number of nodes:
+Appliquer une fonction de hachage à la clé, puis modulo le nombre de nœuds :
 
 ```
-node = hash(key) % number_of_nodes
+nœud = hash(clé) % nombre_de_nœuds
 ```
 
 ```mermaid
 graph TB
-    subgraph "Hash-Based Partitioning (3 nodes)"
+    subgraph "Partitionnement Basé sur le Hachage (3 nœuds)"
         Key1["user:alice"] --> H1["hash() % 3"]
         Key2["user:bob"] --> H2["hash() % 3"]
         Key3["user:carol"] --> H3["hash() % 3"]
 
-        H1 -->|"= 1"| N1[Node 1]
-        H2 -->|"= 2"| N2[Node 2]
-        H3 -->|"= 0"| N0[Node 0]
+        H1 -->|"= 1"| N1[Nœud 1]
+        H2 -->|"= 2"| N2[Nœud 2]
+        H3 -->|"= 0"| N0[Nœud 0]
 
         style N1 fill:#c8e6c9
         style N2 fill:#c8e6c9
@@ -85,56 +85,56 @@ graph TB
     end
 ```
 
-**TypeScript Example:**
+**Exemple TypeScript :**
 ```typescript
 function getNode(key: string, totalNodes: number): number {
-    // Simple hash function
+    // Fonction de hachage simple
     let hash = 0;
     for (let i = 0; i < key.length; i++) {
         hash = ((hash << 5) - hash) + key.charCodeAt(i);
-        hash = hash & hash; // Convert to 32bit integer
+        hash = hash & hash; // Convertir en entier 32bit
     }
     return Math.abs(hash) % totalNodes;
 }
 
-// Examples
+// Exemples
 console.log(getNode('user:alice', 3));  // => 1
 console.log(getNode('user:bob', 3));    // => 2
 console.log(getNode('user:carol', 3));  // => 0
 ```
 
-**Python Example:**
+**Exemple Python :**
 ```python
 def get_node(key: str, total_nodes: int) -> int:
-    """Determine which node should store this key."""
-    hash_value = hash(key)  # Built-in hash function
+    """Déterminer quel nœud doit stocker cette clé."""
+    hash_value = hash(key)  # Fonction de hachage intégrée
     return abs(hash_value) % total_nodes
 
-# Examples
+# Exemples
 print(get_node('user:alice', 3))   # => 1
 print(get_node('user:bob', 3))     # => 2
 print(get_node('user:carol', 3))   # => 0
 ```
 
-**Advantages:**
-- ✅ Even data distribution
-- ✅ Simple to implement
-- ✅ No hotspots (assuming good hash function)
+**Avantages :**
+- ✅ Distribution uniforme des données
+- ✅ Simple à implémenter
+- ✅ Pas de points chauds (en supposant une bonne fonction de hachage)
 
-**Disadvantages:**
-- ❌ Cannot do efficient range queries
-- ❌ Rebalancing is expensive when adding/removing nodes
+**Désavantages :**
+- ❌ Ne permet pas des requêtes de plage efficaces
+- ❌ Le rééquilibrage est coûteux lors de l'ajout/suppression de nœuds
 
-### 2. Range-Based Partitioning
+### 2. Partitionnement Basé sur la Plage
 
-Assign key ranges to each node:
+Assigner des plages de clés à chaque nœud :
 
 ```mermaid
 graph TB
-    subgraph "Range-Based Partitioning (3 nodes)"
-        R1["Node 1<br/>a-m"]
-        R2["Node 2<br/>n-s"]
-        R3["Node 3<br/>t-z"]
+    subgraph "Partitionnement Basé sur la Plage (3 nœuds)"
+        R1["Nœud 1<br/>a-m"]
+        R2["Nœud 2<br/>n-S"]
+        R3["Nœud 3<br/>t-Z"]
 
         Key1["alice"] --> R1
         Key2["bob"] --> R1
@@ -149,7 +149,7 @@ graph TB
     end
 ```
 
-**TypeScript Example:**
+**Exemple TypeScript :**
 ```typescript
 interface Range {
     start: string;
@@ -169,16 +169,16 @@ function getNodeByRange(key: string): number {
             return range.node;
         }
     }
-    throw new Error(`No range found for key: ${key}`);
+    throw new Error(`Aucune plage trouvée pour la clé : ${key}`);
 }
 
-// Examples
+// Exemples
 console.log(getNodeByRange('alice'));  // => 1
 console.log(getNodeByRange('nancy'));  // => 2
 console.log(getNodeByRange('tom'));    // => 3
 ```
 
-**Python Example:**
+**Exemple Python :**
 ```python
 from typing import List, Tuple
 
@@ -189,45 +189,45 @@ ranges: List[Tuple[str, str, int]] = [
 ]
 
 def get_node_by_range(key: str) -> int:
-    """Determine which node based on key range."""
+    """Déterminer quel nœud basé sur la plage de clés."""
     for start, end, node in ranges:
         if start <= key <= end:
             return node
-    raise ValueError(f"No range found for key: {key}")
+    raise ValueError(f"Aucune plage trouvée pour la clé : {key}")
 
-# Examples
+# Exemples
 print(get_node_by_range('alice'))  # => 1
 print(get_node_by_range('nancy'))  # => 2
 print(get_node_by_range('tom'))    # => 3
 ```
 
-**Advantages:**
-- ✅ Efficient range queries
-- ✅ Can optimize for data access patterns
+**Avantages :**
+- ✅ Requêtes de plage efficaces
+- ✅ Peut optimiser pour les modèles d'accès aux données
 
-**Disadvantages:**
-- ❌ Uneven distribution (hotspots)
-- ❌ Complex to load balance
+**Désavantages :**
+- ❌ Distribution inégale (points chauds)
+- ❌ Complexe à équilibrer la charge
 
-## The Rebalancing Problem
+## Le Problème du Rééquilibrage
 
-What happens when you add or remove nodes?
+Que se passe-t-il lorsque vous ajoutez ou supprimez des nœuds ?
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Stable: 3 Nodes
-    Stable --> Rebalancing: Add Node 4
-    Rebalancing --> Stable: Move 25% of data
-    Stable --> Rebalancing: Remove Node 2
-    Rebalancing --> Stable: Redistribute data
+    [*] --> Stable: 3 Nœuds
+    Stable --> Rééquilibrage: Ajouter Nœud 4
+    Rééquilibrage --> Stable: Déplacer 25% des données
+    Stable --> Rééquilibrage: Supprimer Nœud 2
+    Rééquilibrage --> Stable: Redistribuer les données
 ```
 
-### Simple Modulo Hashing Problem
+### Problème du Hachage Modulo Simple
 
-With `hash(key) % N`, changing N from 3 to 4 means **most keys move to different nodes**:
+Avec `hash(clé) % N`, changer N de 3 à 4 signifie que **la plupart des clés se déplacent vers différents nœuds** :
 
-| Key | hash % 3 | hash % 4 | Moved? |
-|-----|----------|----------|--------|
+| Clé | hash % 3 | hash % 4 | Déplacée ? |
+|-----|----------|----------|--------------|
 | user:1 | 1 | 1 | ❌ |
 | user:2 | 2 | 2 | ❌ |
 | user:3 | 0 | 3 | ✅ |
@@ -235,117 +235,117 @@ With `hash(key) % N`, changing N from 3 to 4 means **most keys move to different
 | user:5 | 2 | 1 | ✅ |
 | user:6 | 0 | 2 | ✅ |
 
-**75% of keys moved!**
+**75% des clés se sont déplacées !**
 
-### Consistent Hashing (Advanced)
+### Hachage Cohérent (Avancé)
 
-A technique to minimize data movement when nodes change:
+Une technique pour minimiser le déplacement de données lorsque les nœuds changent :
 
 ```mermaid
 graph TB
-    subgraph "Hash Ring"
-        Ring["Virtual Ring (0 - 2^32)"]
+    subgraph "Anneau de Hachage"
+        Ring["Anneau Virtuel (0 - 2^32)"]
 
-        N1["Node 1<br/>position: 100"]
-        N2["Node 2<br/>position: 500"]
-        N3["Node 3<br/>position: 900"]
+        N1["Nœud 1<br/>position : 100"]
+        N2["Nœud 2<br/>position : 500"]
+        N3["Nœud 3<br/>position : 900"]
 
-        K1["Key A<br/>hash: 150"]
-        K2["Key B<br/>hash: 600"]
-        K3["Key C<br/>hash: 950"]
+        K1["Clé A<br/>hash : 150"]
+        K2["Clé B<br/>hash : 600"]
+        K3["Clé C<br/>hash : 950"]
     end
 
     Ring --> N1
     Ring --> N2
     Ring --> N3
 
-    K1 -->|"clockwise"| N2
-    K2 -->|"clockwise"| N3
-    K3 -->|"clockwise"| N1
+    K1 -->|"sens horaire"| N2
+    K2 -->|"sens horaire"| N3
+    K3 -->|"sens horaire"| N1
 
     style Ring fill:#f9f,stroke:#333,stroke-width:2px
 ```
 
-**Key Idea:** Each key is assigned to the first node clockwise from its hash position.
+**Idée Clé :** Chaque clé est assignée au premier nœud dans le sens horaire à partir de sa position de hachage.
 
-When adding/removing a node, only keys in that node's range move.
+Lors de l'ajout/suppression d'un nœud, seules les clés dans la plage de ce nœud se déplacent.
 
-## Query Patterns and Partitioning
+## Modèles de Requêtes et Partitionnement
 
-Your query patterns should influence your partitioning strategy:
+Vos modèles de requêtes devraient influencer votre stratégie de partitionnement :
 
-### Common Query Patterns
+### Modèles de Requêtes Courants
 
-| Query Type | Best Partitioning | Example |
-|------------|-------------------|---------|
-| **Key-value lookups** | Hash-based | Get user by ID |
-| **Range scans** | Range-based | Users registered last week |
-| **Multi-key access** | Composite hash | Orders by customer |
-| **Geographic queries** | Location-based | Nearby restaurants |
+| Type de Requête | Meilleur Partitionnement | Exemple |
+|-----------------|----------------------|---------|
+| **Recherches clé-valeur** | Basé sur le hachage | Obtenir un utilisateur par ID |
+| **Analyses de plage** | Basé sur la plage | Utilisateurs inscrits la semaine dernière |
+| **Accès multi-clés** | Hachage composite | Commandes par client |
+| **Requêtes géographiques** | Basé sur la localisation | Restaurants proches |
 
-### Example: User Data Partitioning
+### Exemple : Partitionnement des Données Utilisateur
 
 ```mermaid
 graph TB
-    subgraph "Application: Social Network"
-        Query1["Get User Profile<br/>SELECT * FROM users WHERE id = ?"]
-        Query2["List Friends<br/>SELECT * FROM friends WHERE user_id = ?"]
-        Query3["Timeline Posts<br/>SELECT * FROM posts WHERE created_at > ?"]
+    subgraph "Application : Réseau Social"
+        Query1["Obtenir le Profil Utilisateur<br/>SELECT * FROM users WHERE id = ?"]
+        Query2["Lister les Amis<br/>SELECT * FROM friends WHERE user_id = ?"]
+        Query3["Publications de Timeline<br/>SELECT * FROM posts WHERE created_at > ?"]
     end
 
-    subgraph "Partitioning Decision"
-        Query1 -->|"hash(user_id)"| Hash[Hash-Based]
+    subgraph "Décision de Partitionnement"
+        Query1 -->|"hash(user_id)"| Hash[Hachage]
         Query2 -->|"hash(user_id)"| Hash
-        Query3 -->|"range(created_at)"| Range[Range-Based]
+        Query3 -->|"range(created_at)"| Range[Plage]
     end
 
-    subgraph "Result"
-        Hash --> H["User data & friends<br/>partitioned by user_id"]
-        Range --> R["Posts partitioned<br/>by date range"]
+    subgraph "Résultat"
+        Hash --> H["Données utilisateur & amis<br/>partitionnées par user_id"]
+        Range --> R["Publications partitionnées<br/>par plage de dates"]
     end
 ```
 
-## Trade-offs Summary
+## Résumé des Compromis
 
-| Strategy | Distribution | Range Queries | Rebalancing | Complexity |
+| Stratégie | Distribution | Requêtes de Plage | Rééquilibrage | Complexité |
 |----------|--------------|---------------|-------------|------------|
-| **Hash-based** | Even | Poor | Expensive | Low |
-| **Range-based** | Potentially uneven | Excellent | Moderate | Medium |
-| **Consistent hashing** | Even | Poor | Minimal | High |
+| **Basé sur le hachage** | Uniforme | Pauvre | Coûteux | Faible |
+| **Basé sur la plage** | Potentiellement inégale | Excellent | Modéré | Moyen |
+| **Hachage cohérent** | Uniforme | Pauvre | Minimal | Élevé |
 
-## Real-World Examples
+## Exemples Réels
 
-| System | Partitioning Strategy | Notes |
+| Système | Stratégie de Partitionnement | Notes |
 |--------|----------------------|-------|
-| **Redis Cluster** | Hash slots (16384 slots) | Consistent hashing |
-| **Cassandra** | Token-aware (hash ring) | Configurable partitioner |
-| **MongoDB** | Shard key ranges | Range-based on shard key |
-| **DynamoDB** | Hash + range (composite) | Supports composite keys |
-| **PostgreSQL** | Not native | Use extensions like Citus |
+| **Redis Cluster** | Slots de hachage (16384 slots) | Hachage cohérent |
+| **Cassandra** | Sensible aux jetons (anneau de hachage) | Partitionneur configurable |
+| **MongoDB** | Plages de clés de sharding | Basé sur la plage sur la clé de sharding |
+| **DynamoDB** | Hachage + plage (composite) | Supporte les clés composites |
+| **PostgreSQL** | Pas natif | Utiliser des extensions comme Citus |
 
-## Summary
+## Résumé
 
-### Key Takeaways
+### Points Clés à Retenir
 
-1. **Partitioning splits data** across multiple nodes for scalability
-2. **Hash-based** gives even distribution but poor range queries
-3. **Range-based** enables range scans but can create hotspots
-4. **Rebalancing** is a key challenge when nodes change
-5. **Query patterns** should drive your partitioning strategy
+1. **Le partitionnement divise les données** sur plusieurs nœuds pour la mise à l'échelle
+2. **Le hachage** donne une distribution uniforme mais de mauvaises requêtes de plage
+3. **La plage** permet les analyses de plage mais peut créer des points chauds
+4. **Le rééquilibrage** est un défi clé lorsque les nœuds changent
+5. **Les modèles de requêtes** devraient dicter votre stratégie de partitionnement
 
-### Check Your Understanding
+### Vérifiez Votre Compréhension
 
-- [ ] Why is hash-based partitioning better for even distribution?
-- [ ] When would you choose range-based over hash-based?
-- [ ] What happens to data placement when you add a new node with simple modulo hashing?
-- [ ] How does consistent hashing minimize data movement?
+- [ ] Pourquoi le partitionnement basé sur le hachage est-il meilleur pour une distribution uniforme ?
+- [ ] Quand choisiriez-vous le partitionnement par plage plutôt que par hachage ?
+- [ ] Qu'arrive-t-il au placement des données lorsque vous ajoutez un nouveau nœud avec le hachage modulo simple ?
+- [ ] Comment le hachage cohérent minimise-t-il le déplacement de données ?
 
-## 🧠 Chapter Quiz
+## 🧠 Quiz du Chapitre
 
-Test your mastery of these concepts! These questions will challenge your understanding and reveal any gaps in your knowledge.
+Testez votre maîtrise de ces concepts ! Ces questions mettront au défi votre compréhension et révéleront toute lacune dans vos connaissances.
 
 {{#quiz ../../quizzes/data-store-partitioning.toml}}
 
-## What's Next
+## Et Ensuite
 
-Now that we understand how to partition data, let's explore the fundamental trade-offs in distributed data systems: [CAP Theorem](./02-cap-theorem.md)
+Maintenant que nous comprenons comment partitionner les données, explorons les compromis fondamentaux dans les systèmes de données distribués : [Théorème CAP](./02-cap-theorem.md)

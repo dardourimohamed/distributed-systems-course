@@ -1,35 +1,35 @@
-# Chat System Implementation
+# Implémentation du Système de Chat
 
-> **Session 7** - Full session (90 minutes)
+> **Session 7** - Session complète (90 minutes)
 
-## Learning Objectives
+## Objectifs d'apprentissage
 
-- [ ] Build a complete real-time chat system with WebSockets
-- [ ] Implement message ordering with sequence numbers
-- [ ] Handle presence management (online/offline users)
-- [ ] Add message persistence for history
-- [ ] Deploy multiple chat rooms using Docker Compose
+- [ ] Construire un système de chat en temps réel complet avec WebSockets
+- [ ] Implémenter l'ordonnancement des messages avec numéros de séquence
+- [ ] Gérer la gestion de présence (utilisateurs en ligne/hors ligne)
+- [ ] Ajouter la persistance des messages pour l'historique
+- [ ] Déployer plusieurs salles de chat avec Docker Compose
 
 ---
 
-## System Architecture
+## Architecture du système
 
-Our chat system brings together all the concepts from Sessions 6-7:
+Notre système de chat rassemble tous les concepts des sessions 6-7 :
 
 ```mermaid
 graph TB
     subgraph "Clients"
-        C1[User 1 Browser]
-        C2[User 2 Browser]
-        C3[User 3 Browser]
+        C1[Navigateur Utilisateur 1]
+        C2[Navigateur Utilisateur 2]
+        C3[Navigateur Utilisateur 3]
     end
 
-    subgraph "Chat Server"
-        WS[WebSocket Handler]
-        PS[Pub/Sub Engine]
-        SM[Sequence Manager]
-        PM[Presence Manager]
-        MS[Message Store]
+    subgraph "Serveur de Chat"
+        WS[Gestionnaire WebSocket]
+        PS[Moteur Pub/Sub]
+        SM[Gestionnaire de Séquence]
+        PM[Gestionnaire de Présence]
+        MS[Stockage de Messages]
 
         WS --> PS
         WS --> SM
@@ -42,8 +42,8 @@ graph TB
     C2 -->|WebSocket| WS
     C3 -->|WebSocket| WS
 
-    subgraph "Persistence"
-        DB[(Messages DB)]
+    subgraph "Persistance"
+        DB[(Base de Messages)]
     end
 
     MS --> DB
@@ -53,36 +53,36 @@ graph TB
     style SM fill:#f3e5f5
 ```
 
-### Key Components
+### Composants clés
 
-| Component | Responsibility |
+| Composant | Responsabilité |
 |-----------|---------------|
-| **WebSocket Handler** | Manages client connections, sends/receives messages |
-| **Pub/Sub Engine** | Routes messages to rooms, handles subscriptions |
-| **Sequence Manager** | Assigns sequence numbers, ensures ordering |
-| **Presence Manager** | Tracks online/offline status, heartbeat |
-| **Message Store** | Persists messages for history and replay |
+| **Gestionnaire WebSocket** | Gère les connexions client, envoie/reçoit les messages |
+| **Moteur Pub/Sub** | Achemine les messages vers les salles, gère les abonnements |
+| **Gestionnaire de Séquence** | Attribue des numéros de séquence, assure l'ordonnancement |
+| **Gestionnaire de Présence** | Suit le statut en ligne/hors ligne, heartbeat |
+| **Stockage de Messages** | Persiste les messages pour l'historique et la relecture |
 
 ---
 
-## Message Flow
+## Flux des messages
 
 ```mermaid
 sequenceDiagram
-    participant U1 as User 1
-    participant WS as WebSocket Handler
+    participant U1 as Utilisateur 1
+    participant WS as Gestionnaire WebSocket
     participant PS as Pub/Sub
-    participant SM as Sequencer
-    participant DB as Message Store
-    participant U2 as User 2
+    participant SM as Séquenceur
+    participant DB as Stockage de Messages
+    participant U2 as Utilisateur 2
 
     U1->>WS: CONNECT("general")
     WS->>PS: subscribe("general", U1)
     WS->>PM: mark_online(U1)
-    PS->>U2: BROADCAST("User 1 joined")
+    PS->>U2: BROADCAST("Utilisateur 1 a rejoint")
 
-    Note over U1,U2: Sending a message
-    U1->>WS: SEND("general", "Hello!")
+    Note over U1,U2: Envoi d'un message
+    U1->>WS: SEND("general", "Bonjour!")
     WS->>PS: publish("general", msg)
     PS->>SM: get_sequence(msg)
     SM->>DB: save(msg, seq=1)
@@ -90,7 +90,7 @@ sequenceDiagram
     PS->>U1: BROADCAST(msg, seq=1)
     PS->>U2: BROADCAST(msg, seq=1)
 
-    Note over U1,U2: User 2 reconnects
+    Note over U1,U2: Utilisateur 2 se reconnecte
     U2->>WS: CONNECT("general", last_seq=0)
     WS->>DB: get_messages(since=0)
     DB->>U2: REPLAY([msg1, msg2, ...])
@@ -98,29 +98,29 @@ sequenceDiagram
 
 ---
 
-## TypeScript Implementation
+## Implémentation TypeScript
 
-### Project Structure
+### Structure du projet
 
 ```
 chat-system/
 ├── package.json
 ├── tsconfig.json
 ├── src/
-│   ├── types.ts          # Type definitions
-│   ├── pub-sub.ts        # Pub/Sub engine
-│   ├── sequencer.ts      # Sequence number manager
-│   ├── presence.ts       # Presence management
-│   ├── store.ts          # Message persistence
-│   ├── server.ts         # WebSocket server
-│   └── index.ts          # Entry point
+│   ├── types.ts          # Définitions de type
+│   ├── pub-sub.ts        # Moteur Pub/Sub
+│   ├── sequencer.ts      # Gestionnaire de numéros de séquence
+│   ├── presence.ts       # Gestion de présence
+│   ├── store.ts          # Persistance des messages
+│   ├── server.ts         # Serveur WebSocket
+│   └── index.ts          # Point d'entrée
 ├── public/
-│   └── client.html       # Demo client
+│   └── client.html       # Client de démo
 ├── Dockerfile
 └── docker-compose.yml
 ```
 
-### 1. Type Definitions
+### 1. Définitions de type
 
 ```typescript
 // src/types.ts
@@ -150,7 +150,7 @@ export interface Presence {
 export type MessageHandler = (client: Client, message: Message) => void;
 ```
 
-### 2. Pub/Sub Engine
+### 2. Moteur Pub/Sub
 
 ```typescript
 // src/pub-sub.ts
@@ -220,7 +220,7 @@ export class PubSub {
 }
 ```
 
-### 3. Sequence Manager
+### 3. Gestionnaire de séquence
 
 ```typescript
 // src/sequencer.ts
@@ -251,14 +251,14 @@ export class Sequencer {
 }
 ```
 
-### 4. Presence Manager
+### 4. Gestionnaire de présence
 
 ```typescript
 // src/presence.ts
 import { Client, Presence } from './types';
 
-const HEARTBEAT_INTERVAL = 30000; // 30 seconds
-const OFFLINE_TIMEOUT = 60000; // 60 seconds
+const HEARTBEAT_INTERVAL = 30000; // 30 secondes
+const OFFLINE_TIMEOUT = 60000; // 60 secondes
 
 export class PresenceManager {
     private users: Map<string, Presence> = new Map();
@@ -339,7 +339,7 @@ export class PresenceManager {
 }
 ```
 
-### 5. Message Store
+### 5. Stockage de messages
 
 ```typescript
 // src/store.ts
@@ -380,7 +380,7 @@ export class MessageStore {
                 messages.push(JSON.parse(content));
             }
         } catch (err) {
-            // Room doesn't exist yet
+            // La salle n'existe pas encore
         }
 
         return messages;
@@ -402,7 +402,7 @@ export class MessageStore {
 }
 ```
 
-### 6. WebSocket Server
+### 6. Serveur WebSocket
 
 ```typescript
 // src/server.ts
@@ -473,7 +473,7 @@ export class ChatServer {
                 this.presence.unregister(client);
             });
 
-            // Send welcome message
+            // Envoyer un message de bienvenue
             this.sendToClient(client, {
                 type: 'connected',
                 data: { clientId: client.id, user: client.user }
@@ -508,17 +508,17 @@ export class ChatServer {
     private async handleJoin(client: Client, room: string): Promise<void> {
         console.log(`${client.user} joining room: ${room}`);
 
-        // Subscribe to room
+        // S'abonner à la salle
         this.pubSub.subscribe(room, client);
 
-        // Send current presence
+        // Envoyer la présence actuelle
         const presence = this.presence.getPresenceInRoom(room);
         this.sendToClient(client, {
             type: 'presence',
             data: { room, users: presence }
         });
 
-        // Announce join
+        // Annoncer le rejoindre
         this.pubSub.publish(room, {
             id: uuidv4(),
             room,
@@ -528,7 +528,7 @@ export class ChatServer {
             timestamp: Date.now()
         });
 
-        // Send recent messages
+        // Envoyer les messages récents
         const history = await this.store.getMessages(room, 0, 50);
         if (history.length > 0) {
             this.sendToClient(client, {
@@ -565,17 +565,17 @@ export class ChatServer {
             room,
             user: client.user,
             content,
-            sequence: 0, // Will be assigned
+            sequence: 0, // Sera assigné
             timestamp: Date.now()
         };
 
-        // Assign sequence number
+        // Assigner un numéro de séquence
         const sequenced = this.sequencer.sequenceMessage(message);
 
-        // Save to store
+        // Sauvegarder dans le stockage
         await this.store.save(sequenced);
 
-        // Publish to all subscribers
+        // Publier à tous les subscribers
         this.pubSub.publish(room, sequenced);
 
         console.log(`[${room}] ${client.user}: ${content} (seq: ${sequenced.sequence})`);
@@ -619,7 +619,7 @@ export class ChatServer {
 }
 ```
 
-### 7. Entry Point
+### 7. Point d'entrée
 
 ```typescript
 // src/index.ts
@@ -693,9 +693,9 @@ services:
 
 ---
 
-## Python Implementation
+## Implémentation Python
 
-### Project Structure
+### Structure du projet
 
 ```
 chat-system/
@@ -715,7 +715,7 @@ chat-system/
 └── docker-compose.yml
 ```
 
-### 1. Type Definitions
+### 1. Définitions de type
 
 ```python
 # src/types.py
@@ -748,7 +748,7 @@ class Presence:
     last_seen: float
 ```
 
-### 2. Pub/Sub Engine
+### 2. Moteur Pub/Sub
 
 ```python
 # src/pub_sub.py
@@ -799,7 +799,7 @@ class PubSub:
         return list(self.subscriptions.keys())
 ```
 
-### 3. Sequence Manager
+### 3. Gestionnaire de séquence
 
 ```python
 # src/sequencer.py
@@ -828,7 +828,7 @@ class Sequencer:
         return message
 ```
 
-### 4. Presence Manager
+### 4. Gestionnaire de présence
 
 ```python
 # src/presence.py
@@ -837,8 +837,8 @@ import datetime
 from typing import Dict, List, Set
 from .types import Client, Presence
 
-HEARTBEAT_INTERVAL = 30  # seconds
-OFFLINE_TIMEOUT = 60  # seconds
+HEARTBEAT_INTERVAL = 30  # secondes
+OFFLINE_TIMEOUT = 60  # secondes
 
 class PresenceManager:
     def __init__(self):
@@ -909,7 +909,7 @@ class PresenceManager:
         self.tasks.clear()
 ```
 
-### 5. Message Store
+### 5. Stockage de messages
 
 ```python
 # src/store.py
@@ -969,7 +969,7 @@ class MessageStore:
             return 0
 ```
 
-### 6. WebSocket Server
+### 6. Serveur WebSocket
 
 ```python
 # src/server.py
@@ -1134,7 +1134,7 @@ class ChatServer:
             await asyncio.Future()  # Run forever
 ```
 
-### 7. Entry Point
+### 7. Point d'entrée
 
 ```python
 # src/main.py
@@ -1150,7 +1150,7 @@ if __name__ == '__main__':
     asyncio.run(main())
 ```
 
-### 8. Requirements
+### 8. Configuration requise
 
 ```txt
 websockets==13.1
@@ -1193,90 +1193,90 @@ services:
 
 ---
 
-## Running the Chat System
+## Exécution du système de chat
 
 ### TypeScript
 
 ```bash
-# Install dependencies
+# Installer les dépendances
 npm install
 
-# Build
+# Compiler
 npm run build
 
-# Start server
+# Démarrer le serveur
 npm start
 
-# With Docker Compose
+# Avec Docker Compose
 docker-compose up
 ```
 
 ### Python
 
 ```bash
-# Install dependencies
+# Installer les dépendances
 pip install -r requirements.txt
 
-# Start server
+# Démarrer le serveur
 python src/main.py
 
-# With Docker Compose
+# Avec Docker Compose
 docker-compose up
 ```
 
 ---
 
-## Exercises
+## Exercices
 
-### Exercise 1: Basic Chat Operations
-1. Start the chat server
-2. Connect two WebSocket clients
-3. Join the same room
-4. Send messages and verify both clients receive them
-5. Leave the room and verify the broadcast
+### Exercice 1 : Opérations de chat de base
+1. Démarrer le serveur de chat
+2. Connecter deux clients WebSocket
+3. Rejoindre la même salle
+4. Envoyer des messages et vérifier que les deux clients les reçoivent
+5. Quitter la salle et vérifier la diffusion
 
-### Exercise 2: Message Ordering
-1. Send multiple messages rapidly from different clients
-2. Verify all messages have unique, sequential sequence numbers
-3. Disconnect and reconnect a client
-4. Request message history and verify ordering is preserved
+### Exercice 2 : Ordonnancement des messages
+1. Envoyer plusieurs messages rapidement depuis différents clients
+2. Vérifier que tous les messages ont des numéros de séquence uniques et séquentiels
+3. Déconnecter et reconnecter un client
+4. Demander l'historique des messages et vérifier que l'ordonnancement est préservé
 
-### Exercise 3: Presence Management
-1. Connect multiple clients to different rooms
-2. Join a room and verify presence broadcasts
-3. Simulate a network failure (kill a client without proper leave)
-4. Verify offline detection kicks in after timeout
+### Exercice 3 : Gestion de la présence
+1. Connecter plusieurs clients à différentes salles
+2. Rejoindre une salle et vérifier les diffusions de présence
+3. Simuler une défaillance réseau (tuer un client sans partir correctement)
+4. Vérifier que la détection hors ligne intervient après le délai d'attente
 
-### Exercise 4: Message Persistence
-1. Send messages to a room
-2. Stop the server
-3. Verify messages are saved to disk
-4. Restart the server
-5. Connect a new client and verify it receives message history
-
----
-
-## Common Pitfalls
-
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| Messages not ordered | Missing sequence numbers | Always sequence before publishing |
-| Old messages not received | Not requesting history on join | Implement replay on connect |
-| Presence shows offline | Heartbeat not sent | Ensure heartbeat loop is running |
-| Duplicate messages | Re-publishing saved messages | Only publish new messages, not history |
+### Exercice 4 : Persistance des messages
+1. Envoyer des messages à une salle
+2. Arrêter le serveur
+3. Vérifier que les messages sont sauvegardés sur disque
+4. Redémarrer le serveur
+5. Connecter un nouveau client et vérifier qu'il reçoit l'historique des messages
 
 ---
 
-## Key Takeaways
+## Pièges courants
 
-- **Pub/Sub** enables scalable multi-room communication
-- **Sequence numbers** guarantee message ordering across all clients
-- **Presence management** requires both active heartbeats and passive timeout detection
-- **Message persistence** allows clients to reconnect and receive history
-- **Docker Compose** simplifies deployment and testing of the complete system
+| Problème | Cause | Solution |
+|----------|-------|----------|
+| Messages non ordonnés | Numéros de séquence manquants | Toujours séquencer avant de publier |
+| Anciens messages non reçus | Pas demander l'historique lors de la jointure | Implémenter la relecture à la connexion |
+| La présence affiche hors ligne | Heartbeat non envoyé | S'assurer que la boucle heartbeat fonctionne |
+| Messages en double | Republication des messages sauvegardés | Publier uniquement les nouveaux messages, pas l'historique |
 
-## 🧠 Chapter Quiz
+---
 
-Test your mastery of these concepts! These questions will challenge your understanding and reveal any gaps in your knowledge.
+## Points clés à retenir
+
+- **Pub/Sub** permet la communication multi-salle extensible
+- **Les numéros de séquence** garantissent l'ordonnancement des messages sur tous les clients
+- **La gestion de présence** nécessite à la fois des heartbeats actifs et une détection de délai d'attente passive
+- **La persistance des messages** permet aux clients de se reconnecter et de recevoir l'historique
+- **Docker Compose** simplifie le déploiement et les tests du système complet
+
+## 🧠 Quiz du chapitre
+
+Testez votre maîtrise de ces concepts ! Ces questions mettront au défi votre compréhension et révéleront les lacunes dans vos connaissances.
 
 {{#quiz ../../quizzes/real-time-chat-system.toml}}

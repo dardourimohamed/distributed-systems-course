@@ -1,14 +1,15 @@
 [[questions]]
 type = "MultipleChoice"
-prompt.prompt = "What does a leader do when receiving a client request?"
-prompt.distractors = ["Immediately execute", "Append to log, replicate, commit on majority", "Send directly to followers"]
-answer.answer = "Append to log, replicate, commit on majority"
-context = "The full pipeline: append to leader's log, replicate to followers, wait for majority acknowledgment, commit, then respond to client."
+prompt.prompt = "Que fait un leader lors de la réception d'une requête client ?"
+prompt.distractors = ["Exécuter immédiatement", "Ajouter au journal, répliquer, valider sur majorité", "Envoyer directement aux suiveurs"]
+answer.answer = "Ajouter au journal, répliquer, valider sur majorité"
+context = "Le pipeline complet : ajouter au journal du leader, répliquer aux suiveurs, attendre la reconnaissance de la majorité, valider, puis répondre au client."
 id = "2cd08454-0fcd-4ab3-b48f-6c5fcf51a873"
 
 [[questions]]
 type = "ShortAnswer"
-prompt.prompt = "What's the commit index in Raft?"
-answer.answer = "highest committed entry"
-context = "Commit index is the highest log entry known to be committed (on majority). Leader advances it when current-term entry is on majority."
+prompt.prompt = "Quel est l'index de validation dans Raft ?"
+answer.answer = "entrée validée la plus élevée"
+answer.alternatives = ["commit index", "index de validation", "index de commit"]
+context = "L'index de validation est l'entrée de journal la plus élevée connue pour être validée (sur la majorité). Le leader l'avance lorsque l'entrée du terme en cours est sur la majorité."
 id = "ccc1049d-1987-4e08-bc36-e81213a715da"

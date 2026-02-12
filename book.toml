@@ -1,10 +1,10 @@
 # Distributed Systems Course - mdBook Configuration
 
 [book]
-title = "Distributed Systems Course"
+title = "Cours de Systèmes Distribués (Distributed Systems Course)"
 authors = ["Mohamed Dardouri"]
-description = "A comprehensive course on distributed systems from fundamentals to consensus"
-language = "en"
+description = "Un cours complet sur les systèmes distribués, des fondamentaux au consensus"
+language = "fr"
 src = "src"
 
 [build]

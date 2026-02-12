@@ -1,403 +1,406 @@
-# The Raft Algorithm
+# L'Algorithme Raft
 
-> **Session 9, Part 1** - 25 minutes
+> **Session 9, Partie 1** - 25 minutes
 
-## Learning Objectives
+## Objectifs d'Apprentissage
 
-- [ ] Understand Raft's design philosophy
-- [ ] Learn the three states of a Raft node
-- [ ] Explore how Raft handles consensus through leader election and log replication
-- [ ] Understand the concept of terms in Raft
-- [ ] Learn Raft's safety properties
-
----
-
-## Raft Design Philosophy
-
-Raft was designed by Diego Ongaro and John Ousterhout in 2014 with a specific goal: **understandability**. Unlike Paxos, which was notoriously difficult to understand and implement correctly, Raft separates the consensus problem into clear, manageable subproblems.
-
-### Core Design Principles
-
-1. **Strong Leader**: Raft uses a strong leader approach—all log entries flow through the leader
-2. **Leader Completeness**: Once a log entry is committed, it stays in the log of all future leaders
-3. **Decomposition**: Break consensus into three subproblems:
-   - Leader election
-   - Log replication
-   - Safety
-
-### Why "Raft"?
-
-The name is an analogy: a raft (the algorithm) keeps all nodes (logs) together and moving in the same direction, just like a raft keeps people together on water.
+- [ ] Comprendre la philosophie de conception de Raft
+- [ ] Apprendre les trois états d'un nœud Raft
+- [ ] Explorer comment Raft gère le consensus à travers l'élection de leader et la réplication de journal
+- [ ] Comprendre le concept des termes dans Raft
+- [ ] Apprendre les propriétés de sécurité de Raft
 
 ---
 
-## Raft Overview
+## Philosophie de Conception de Raft
+
+Raft a été conçu par Diego Ongaro et John Ousterhout en 2014 avec un objectif spécifique : **la compréhension**. Contrairement à Paxos, qui était notoirement difficile à comprendre et à implémenter correctement, Raft sépare le problème du consensus en sous-problèmes clairs et gérables.
+
+### Principes de Conception Fondamentaux
+
+1. **Leader Fort** : Raft utilise une approche de leader fort — toutes les entrées de journal passent par le leader
+2. **Complétude du Leader** : Une fois qu'une entrée de journal est validée, elle reste dans le journal de tous les futurs leaders
+3. **Décomposition** : Diviser le consensus en trois sous-problèmes :
+   - Élection de leader
+   - Réplication de journal
+   - Sécurité
+
+### Pourquoi "Raft" ?
+
+Le nom est une analogie : un radeau (l'algorithme) garde tous les nœuds (journaux) ensemble et se déplaçant dans la même direction, tout comme un radeau garde les gens ensemble sur l'eau.
+
+---
+
+## Aperçu de Raft
 
 ```mermaid
 graph TB
-    subgraph "Raft Consensus"
+    subgraph "Consensus Raft"
         Client[Client]
 
         subgraph "Cluster"
             L[Leader]
-            F1[Follower 1]
-            F2[Follower 2]
-            F3[Follower 3]
+            F1[Suiveur 1]
+            F2[Suiveur 2]
+            F3[Suiveur 3]
 
             L --> F1
             L --> F2
             L --> F3
         end
 
-        Client -->|Write Request| L
+        Client -->|Demande d'écriture| L
         L -->|AppendEntries| F1 & F2 & F3
         F1 & F2 & F3 -->|Ack| L
-        L -->|Response| Client
+        L -->|Réponse| Client
     end
 ```
 
-### Key Concepts
+### Concepts Clés
 
 | Concept | Description |
 |---------|-------------|
-| **Leader** | The only node that handles client requests and appends entries to the log |
-| **Follower** | Passive nodes that replicate the leader's log |
-| **Candidate** | A node campaigning to become leader during an election |
-| **Term** | A logical clock divided into terms of arbitrary length |
-| **Log** | A sequence of entries containing commands to apply to the state machine |
+| **Leader** | Le seul nœud qui gère les demandes clientes et ajoute des entrées au journal |
+| **Suiveur (Follower)** | Nœuds passifs qui répliquent le journal du leader |
+| **Candidat** | Un nœud qui fait campagne pour devenir leader lors d'une élection |
+| **Terme** | Une horloge logique divisée en termes de longueur arbitraire |
+| **Journal (Log)** | Une séquence d'entrées contenant des commandes à appliquer à la machine à états |
 
 ---
 
-## Node States
+## États des Nœuds
 
-Each Raft node can be in one of three states:
+Chaque nœud Raft peut être dans l'un des trois états :
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Follower: Node starts
+    [*] --> Suiveur: Le nœud démarre
 
-    Follower --> Candidate: Election timeout expires<br/>no valid RPC received
-    Candidate --> Leader: Receives votes from majority
-    Candidate --> Follower: Discovers current leader<br/>or higher term
-    Leader --> Follower: Discovers higher term
+    Suiveur --> Candidat: Délai d'élection expire<br/>aucun RPC valide reçu
+    Candidat --> Leader: Reçoit les votes de la majorité
+    Candidat --> Suiveur: Découvre le leader actuel<br/>ou terme supérieur
+    Leader --> Suiveur: Découvre un terme supérieur
 
-    Follower --> Follower: Receives valid AppendEntries/RPC<br/>from leader or candidate
+    Suiveur --> Suiveur: Reçoit AppendEntries/RPC valide<br/>du leader ou candidat
 
-    note right of Follower
-        - Responds to RPCs
-        - No outgoing RPCs
-        - Election timeout running
+    note right of Suiveur
+        - Répond aux RPCs
+        - Pas de RPC sortants
+        - Délai d'élection en cours
     end note
 
-    note right of Candidate
-        - Requesting votes
-        - Election timeout running
-        - Can become leader or follower
+    note right of Candidat
+        - Demander des votes
+        - Délai d'élection en cours
+        - Peut devenir leader ou suiveur
     end note
 
     note right of Leader
-        - Handles all client requests
-        - Sends heartbeats to followers
-        - No timeout (active)
+        - Gère toutes les demandes clientes
+        - Envoie des battements de cœur aux suiveurs
+        - Pas de délai (actif)
     end note
 ```
 
-### State Descriptions
+### Descriptions d'États
 
-#### Follower
-- **Default state** for all nodes
-- Passively receives entries from the leader
-- Responds to RPCs (RequestVote, AppendEntries)
-- If no communication for **election timeout**, becomes candidate
+#### Suiveur (Follower)
 
-#### Candidate
-- **Campaigning** to become leader
-- Increments current term
-- Votes for itself
-- Sends RequestVote RPCs to all other nodes
-- Becomes leader if it receives votes from majority
-- Returns to follower if it discovers current leader or higher term
+- **État par défaut** pour tous les nœuds
+- Reçoit passivement les entrées du leader
+- Répond aux RPCs (RequestVote, AppendEntries)
+- Si aucune communication pendant le **délai d'élection**, devient candidat
+
+#### Candidat
+
+- **Fait campagne** pour devenir leader
+- Incrémente le terme actuel
+- Vote pour lui-même
+- Envoie des RPCs RequestVote à tous les autres nœuds
+- Devient leader s'il reçoit les votes de la majorité
+- Retourne à l'état de suiveur s'il découvre le leader actuel ou un terme supérieur
 
 #### Leader
-- **Handles all client requests**
-- Sends **AppendEntries RPCs** to all followers (heartbeats)
-- Commits entries once replicated to majority
-- Steps down if it discovers a higher term
+
+- **Gère toutes les demandes clientes**
+- Envoie des **RPCs AppendEntries** à tous les suiveurs (battements de cœur)
+- Valide les entrées une fois répliquées sur la majorité
+- Descend s'il découvre un terme supérieur
 
 ---
 
-## Terms
+## Termes
 
-A **term** is Raft's logical time mechanism:
+Un **terme** est le mécanisme de temps logique de Raft :
 
 ```mermaid
 timeline
-    title Raft Terms
-    Term 1 : Leader A elected
-           : Normal operation
-           : Leader A crashes
+    title Termes Raft
+    Terme 1 : Leader A élu
+           : Fonctionnement normal
+           : Le leader A plante
 
-    Term 2 : Election begins
-           : Split vote!
-           : Timeout, new election
+    Terme 2 : L'élection commence
+           : Vote partagé !
+           : Délai, nouvelle élection
 
-    Term 3 : Leader B elected
-           : Normal operation
+    Terme 3 : Leader B élu
+           : Fonctionnement normal
 ```
 
-### Term Properties
+### Propriétés des Termes
 
-1. **Monotonically Increasing**: Terms always go up, never down
-2. **Current Term**: Each node stores the current term number
-3. **Term Transitions**:
-   - Nodes increment term when becoming candidate
-   - Nodes update term when receiving higher-term message
-   - When term changes, node becomes follower
+1. **Croissance Monotone** : Les termes augmentent toujours, ne diminuent jamais
+2. **Terme Actuel** : Chaque nœud stocke le numéro de terme actuel
+3. **Transitions de Terme** :
+   - Les nœuds incrémentent le terme lorsqu'ils deviennent candidats
+   - Les nœuds mettent à jour le terme lorsqu'ils reçoivent un message de terme supérieur
+   - Lorsque le terme change, le nœud devient suiveur
 
-### Term in Messages
+### Terme dans les Messages
 
 ```mermaid
 sequenceDiagram
-    participant C as Candidate
-    participant F1 as Follower (term=3)
-    participant F2 as Follower (term=4)
+    participant C as Candidat
+    participant F1 as Suiveur (terme=3)
+    participant F2 as Suiveur (terme=4)
 
-    C->>F1: RequestVote(term=5)
-    Note over F1: Sees higher term
-    F1-->>C: Vote YES (updates to term=5)
+    C->>F1: RequestVote(terme=5)
+    Note over F1: Voit un terme supérieur
+    F1-->>C: Vote OUI (passe à terme=5)
 
-    C->>F2: RequestVote(term=5)
-    Note over F2: Already at higher term
-    F2-->>C: Vote NO (my term is higher)
+    C->>F2: RequestVote(terme=5)
+    Note over F2: Déjà à un terme supérieur
+    F2-->>C: Vote NON (mon terme est supérieur)
 ```
 
 ---
 
-## Raft's Two-Phase Approach
+## Approche en Deux Phases de Raft
 
-Raft achieves consensus through two main phases:
+Raft atteint le consensus à travers deux phases principales :
 
-### Phase 1: Leader Election
+### Phase 1 : Élection de Leader
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant F1 as Follower 1
-    participant F2 as Follower 2
-    participant F3 as Follower 3
+    participant F1 as Suiveur 1
+    participant F2 as Suiveur 2
+    participant F3 as Suiveur 3
 
-    Note over F1,F3: Election timeout expires
+    Note over F1,F3: Délai d'élection expire
 
-    F1->>F1: Becomes Candidate (term=1)
-    F1->>F2: RequestVote(term=1)
-    F1->>F3: RequestVote(term=1)
+    F1->>F1: Devient Candidat (terme=1)
+    F1->>F2: RequestVote(terme=1)
+    F1->>F3: RequestVote(terme=1)
 
-    F2-->>F1: Grant vote (term=1)
-    F3-->>F1: Grant vote (term=1)
+    F2-->>F1: Accorder le vote (terme=1)
+    F3-->>F1: Accorder le vote (terme=1)
 
-    Note over F1: Won majority!
-    F1->>F1: Becomes Leader
-    F1->>F2: AppendEntries (heartbeat)
-    F1->>F3: AppendEntries (heartbeat)
+    Note over F1: Majorité gagnée !
+    F1->>F1: Devient Leader
+    F1->>F2: AppendEntries (battement de cœur)
+    F1->>F3: AppendEntries (battement de cœur)
 ```
 
-### Phase 2: Log Replication
+### Phase 2 : Réplication de Journal
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant C as Client
     participant L as Leader
-    participant F1 as Follower 1
-    participant F2 as Follower 2
+    participant F1 as Suiveur 1
+    participant F2 as Suiveur 2
 
     C->>L: SET x=5
 
-    L->>L: Append to log (index=10, term=1)
+    L->>L: Ajouter au journal (index=10, terme=1)
     L->>F1: AppendEntries(entry: SET x=5)
     L->>F2: AppendEntries(entry: SET x=5)
 
-    F1-->>L: Success (replicated)
-    F2-->>L: Success (replicated)
+    F1-->>L: Succès (répliqué)
+    F2-->>L: Succès (répliqué)
 
-    Note over L: Majority replicated!<br/>Commit entry
+    Note over L: Majorité répliquée !<br/>Valider l'entrée
 
-    L->>L: Apply to state machine: x=5
-    L-->>C: Response: OK
+    L->>L: Appliquer à la machine à états : x=5
+    L-->>C: Réponse : OK
 ```
 
 ---
 
-## Safety Properties
+## Propriétés de Sécurité
 
-Raft guarantees several important safety properties:
+Raft garantit plusieurs propriétés de sécurité importantes :
 
-### 1. Election Safety
+### 1. Sécurité d'Élection
 
-> At most one leader can be elected per term.
+> Au plus un leader peut être élu par terme.
 
-**How**: Each node votes at most once per term, and a candidate needs majority of votes.
+**Comment** : Chaque nœud vote au plus une fois par terme, et un candidat a besoin de la majorité des votes.
 
 ```mermaid
 graph TB
-    subgraph "Same Term - Only One Leader"
-        T[Term 5]
-        C1[Candidate A: 2 votes]
-        C2[Candidate B: 1 vote]
-        C1 -->|wins majority| L[Leader A]
+    subgraph "Même Terme - Un Seul Leader"
+        T[Terme 5]
+        C1[Candidat A : 2 votes]
+        C2[Candidat B : 1 vote]
+        C1 -->|gagne la majorité| L[Leader A]
         style L fill:#90EE90
     end
 ```
 
-### 2. Leader Append-Only
+### 2. Ajout-Seulement du Leader
 
-> A leader never overwrites or deletes entries in its log; it only appends.
+> Un leader ne jamais écrase ou supprime les entrées de son journal ; il ajoute seulement.
 
-**How**: Leaders always append new entries to the end of their log.
+**Comment** : Les leaders ajoutent toujours de nouvelles entrées à la fin de leur journal.
 
-### 3. Log Matching
+### 3. Correspondance de Journal
 
-> If two logs contain an entry with the same index and term, then all preceding entries are identical.
+> Si deux journaux contiennent une entrée avec le même index et terme, alors toutes les entrées précédentes sont identiques.
 
 ```mermaid
 graph LR
-    subgraph "Leader's Log"
-        L1[index 1, term 1: SET a=1]
-        L2[index 2, term 1: SET b=2]
-        L3[index 3, term 2: SET c=3]
+    subgraph "Journal du Leader"
+        L1[index 1, terme 1: SET a=1]
+        L2[index 2, terme 1: SET b=2]
+        L3[index 3, terme 2: SET c=3]
         L1 --> L2 --> L3
     end
 
-    subgraph "Follower's Log"
-        F1[index 1, term 1: SET a=1]
-        F2[index 2, term 1: SET b=2]
-        F3[index 3, term 2: SET c=3]
-        F4[index 4, term 2: SET d=4]
+    subgraph "Journal du Suiveur"
+        F1[index 1, terme 1: SET a=1]
+        F2[index 2, terme 1: SET b=2]
+        F3[index 3, terme 2: SET c=3]
+        F4[index 4, terme 2: SET d=4]
         F1 --> F2 --> F3 --> F4
     end
 
-    Match[Entries 1-3 match!<br/>Follower may have extra]
+    Match[Entrées 1-3 correspondent !<br/>Le suiveur peut avoir des entrées supplémentaires]
 ```
 
-### 4. Leader Completeness
+### 4. Complétude du Leader
 
-> If a log entry is committed in a given term, it will be present in the logs of all leaders for higher terms.
+> Si une entrée de journal est validée dans un terme donné, elle sera présente dans les journaux de tous les leaders pour les termes supérieurs.
 
-**How**: A candidate must have all committed entries before it can win an election.
+**Comment** : Un candidat doit avoir toutes les entrées validées avant de pouvoir gagner une élection.
 
-### 5. State Machine Safety
+### 5. Sécurité de la Machine à États
 
-> If a server has applied a log entry at a given index to its state machine, no other server will ever apply a different log entry for the same index.
+> Si un serveur a appliqué une entrée de journal à un index donné à sa machine à états, aucun autre serveur n'appliquera jamais une entrée de journal différente pour le même index.
 
 ---
 
-## Raft RPCs
+## RPCs Raft
 
-Raft uses two main RPC types:
+Raft utilise deux types principaux de RPC :
 
-### RequestVote RPC
+### RPC RequestVote
 
 ```typescript
 interface RequestVoteArgs {
-  term: number;           // Candidate's term
-  candidateId: string;    // Candidate requesting vote
-  lastLogIndex: number;   // Index of candidate's last log entry
-  lastLogTerm: number;    // Term of candidate's last log entry
+  term: number;           // Terme du candidat
+  candidateId: string;    // Candidat demandant le vote
+  lastLogIndex: number;   // Index de la dernière entrée de journal du candidat
+  lastLogTerm: number;    // Terme de la dernière entrée de journal du candidat
 }
 
 interface RequestVoteReply {
-  term: number;           // Current term (for candidate to update)
-  voteGranted: boolean;   // True if candidate received vote
+  term: number;           // Terme actuel (pour que le candidat mette à jour)
+  voteGranted: boolean;   // Vrai si le candidat a reçu le vote
 }
 ```
 
-**Voting Rules**:
-1. If `term < currentTerm`: deny vote
-2. If `votedFor` is null or `candidateId`: grant vote
-3. If candidate's log is at least as up-to-date: grant vote
+**Règles de Vote** :
+1. Si `term < currentTerm` : refuser le vote
+2. Si `votedFor` est null ou `candidateId` : accorder le vote
+3. Si le journal du candidat est au moins à jour : accorder le vote
 
-### AppendEntries RPC
+### RPC AppendEntries
 
 ```typescript
 interface AppendEntriesArgs {
-  term: number;           // Leader's term
-  leaderId: string;       // So follower can redirect clients
-  prevLogIndex: number;   // Index of log entry preceding new ones
-  prevLogTerm: number;    // Term of prevLogIndex entry
-  entries: LogEntry[];    // Log entries to store (empty for heartbeat)
-  leaderCommit: number;   // Leader's commit index
+  term: number;           // Terme du leader
+  leaderId: string;       // Pour que le suiveur puisse rediriger les clients
+  prevLogIndex: number;   // Index de l'entrée de journal précédant les nouvelles
+  prevLogTerm: number;    // Terme de l'entrée prevLogIndex
+  entries: LogEntry[];    // Entrées de journal à stocker (vide pour battement de cœur)
+  leaderCommit: number;   // Index de validation du leader
 }
 
 interface AppendEntriesReply {
-  term: number;           // Current term (for leader to update)
-  success: boolean;       // True if follower had entry matching prevLogIndex
+  term: number;           // Terme actuel (pour que le leader mette à jour)
+  success: boolean;       // Vrai si le suiveur avait l'entrée correspondant à prevLogIndex
 }
 ```
 
-**Used for both**:
-- **Log replication**: Sending new entries
-- **Heartbeats**: Empty entries to maintain authority
+**Utilisé pour les deux** :
+- **Réplication de journal** : Envoyer de nouvelles entrées
+- **Battements de cœur** : Entrées vides pour maintenir l'autorité
 
 ---
 
-## Log Completeness Property
+## Propriété de Complétude de Journal
 
-When voting, nodes compare log completeness:
+Lors du vote, les nœuds comparent la complétude du journal :
 
 ```mermaid
 graph TB
-    subgraph "Comparing Logs"
-        A[Candidate Log]
-        B[Follower Log]
+    subgraph "Comparaison des Journaux"
+        A[Journal du Candidat]
+        B[Journal du Suiveur]
 
-        A --> A1[Last index: 10, term: 5]
-        B --> B1[Last index: 9, term: 5]
+        A --> A1[Dernier index : 10, terme : 5]
+        B --> B1[Dernier index : 9, terme : 5]
 
-        Result[A's log is more up-to-date<br/>because index 10 > 9]
+        Result[Le journal A est plus à jour<br/>car l'index 10 > 9]
     end
 
-    subgraph "Tie-Breaking Rule"
-        C[Candidate: last term=5]
-        D[Follower: last term=6]
+    subgraph "Règle de Décision"
+        C[Candidat : dernier terme=5]
+        D[Suiveur : dernier terme=6]
 
-        Result2[Follower is more up-to-date<br/>because term 6 > 5]
+        Result2[Le suiveur est plus à jour<br/>car le terme 6 > 5]
     end
 ```
 
-**Up-to-date comparison**:
-1. Compare the **term** of the last entries
-2. If terms differ, the log with the higher term is more up-to-date
-3. If terms are same, the log with the longer length is more up-to-date
+**Comparaison de mise à jour** :
+1. Comparer le **terme** des dernières entrées
+2. Si les termes diffèrent, le journal avec le terme le plus élevé est plus à jour
+3. Si les termes sont identiques, le journal avec la longueur la plus longue est plus à jour
 
 ---
 
-## Randomized Election Timeouts
+## Délais d'Élection Randomisés
 
-Raft uses **randomized election timeouts** to prevent split votes:
+Raft utilise des **délais d'élection randomisés** pour empêcher les votes partagés :
 
 ```mermaid
 timeline
-    title Randomized Timeouts Prevent Split Votes
+    title Les Délais Randomisés Empêchent les Votes Partagés
 
-    Node1 : 150ms timeout
-    Node2 : 300ms timeout
-    Node3 : 200ms timeout
+    Node1 : Délai de 150ms
+    Node2 : Délai de 300ms
+    Node3 : Délai de 200ms
 
-    Node1 : Timeout! Becomes candidate
-    Node1 : Wins election before Node2/3 timeout
-    Node2 & Node3 : Receive heartbeat, reset timeouts
+    Node1 : Délai ! Devient candidat
+    Node1 : Gagne l'élection avant Node2/3 délai
+    Node2 & Node3 : Reçoivent le battement de cœur, réinitialisent les délais
 ```
 
-**Without randomization**: All followers timeout simultaneously → all become candidates → split vote → no leader elected.
+**Sans randomisation** : Tous les suiveurs atteignent le délai simultanément → tous deviennent candidats → vote partagé → aucun leader élu.
 
-**With randomization**: Only one follower times out first → becomes candidate → likely to win election.
+**Avec randomisation** : Un seul suiveur atteint le délai en premier → devient candidat → susceptible de gagner l'élection.
 
 ---
 
-## TypeScript Implementation Structure
+## Structure d'Implémentation TypeScript
 
 ```typescript
-// Type definitions for Raft
+// Définitions de types pour Raft
 type NodeState = 'follower' | 'candidate' | 'leader';
 
 interface LogEntry {
@@ -407,17 +410,17 @@ interface LogEntry {
 }
 
 interface RaftNode {
-  // Persistent state
+  // État persistant
   currentTerm: number;
   votedFor: string | null;
   log: LogEntry[];
 
-  // Volatile state
+  // État volatil
   commitIndex: number;
   lastApplied: number;
   state: NodeState;
 
-  // Leader-only volatile state
+  // État volatil uniquement pour le leader
   nextIndex: number[];
   matchIndex: number[];
 }
@@ -432,7 +435,7 @@ class RaftNodeImpl implements RaftNode {
   nextIndex: number[] = [];
   matchIndex: number[] = [];
 
-  // Handle RequestVote RPC
+  // Gérer le RPC RequestVote
   requestVote(args: RequestVoteArgs): RequestVoteReply {
     if (args.term > this.currentTerm) {
       this.currentTerm = args.term;
@@ -451,7 +454,7 @@ class RaftNodeImpl implements RaftNode {
     return { term: this.currentTerm, voteGranted: false };
   }
 
-  // Handle AppendEntries RPC
+  // Gérer le RPC AppendEntries
   appendEntries(args: AppendEntriesArgs): AppendEntriesReply {
     if (args.term > this.currentTerm) {
       this.currentTerm = args.term;
@@ -462,17 +465,17 @@ class RaftNodeImpl implements RaftNode {
       return { term: this.currentTerm, success: false };
     }
 
-    // Check if log has entry at prevLogIndex with prevLogTerm
+    // Vérifier si le journal a une entrée à prevLogIndex avec prevLogTerm
     if (this.log[args.prevLogIndex]?.term !== args.prevLogTerm) {
       return { term: this.currentTerm, success: false };
     }
 
-    // Append new entries
+    // Ajouter de nouvelles entrées
     for (const entry of args.entries) {
       this.log[entry.index] = entry;
     }
 
-    // Update commit index
+    // Mettre à jour l'index de validation
     if (args.leaderCommit > this.commitIndex) {
       this.commitIndex = Math.min(args.leaderCommit, this.log.length - 1);
     }
@@ -495,7 +498,7 @@ class RaftNodeImpl implements RaftNode {
 
 ---
 
-## Python Implementation Structure
+## Structure d'Implémentation Python
 
 ```python
 from dataclasses import dataclass, field
@@ -541,17 +544,17 @@ class AppendEntriesReply:
 
 class RaftNode:
     def __init__(self, node_id: str, peers: List[str]):
-        # Persistent state
+        # État persistant
         self.current_term: int = 0
         self.voted_for: Optional[str] = None
         self.log: List[LogEntry] = []
 
-        # Volatile state
+        # État volatil
         self.commit_index: int = 0
         self.last_applied: int = 0
         self.state: NodeState = NodeState.FOLLOWER
 
-        # Leader-only state
+        # État uniquement pour le leader
         self.next_index: dict[str, int] = {}
         self.match_index: dict[str, int] = {}
 
@@ -559,7 +562,7 @@ class RaftNode:
         self.peers = peers
 
     def request_vote(self, args: RequestVoteArgs) -> RequestVoteReply:
-        """Handle RequestVote RPC."""
+        """Gérer le RPC RequestVote."""
         if args.term > self.current_term:
             self.current_term = args.term
             self.state = NodeState.FOLLOWER
@@ -577,7 +580,7 @@ class RaftNode:
         return RequestVoteReply(self.current_term, False)
 
     def append_entries(self, args: AppendEntriesArgs) -> AppendEntriesReply:
-        """Handle AppendEntries RPC."""
+        """Gérer le RPC AppendEntries."""
         if args.term > self.current_term:
             self.current_term = args.term
             self.state = NodeState.FOLLOWER
@@ -585,30 +588,30 @@ class RaftNode:
         if args.term != self.current_term:
             return AppendEntriesReply(self.current_term, False)
 
-        # Check if log has entry at prev_log_index with prev_log_term
+        # Vérifier si le journal a une entrée à prev_log_index avec prev_log_term
         if len(self.log) <= args.prev_log_index:
             return AppendEntriesReply(self.current_term, False)
 
         if self.log[args.prev_log_index].term != args.prev_log_term:
             return AppendEntriesReply(self.current_term, False)
 
-        # Append new entries
+        # Ajouter de nouvelles entrées
         for entry in args.entries:
             if len(self.log) > entry.index:
                 if self.log[entry.index].term != entry.term:
-                    # Conflict: delete from this point
+                    # Conflit : supprimer à partir de ce point
                     self.log = self.log[:entry.index]
             if len(self.log) <= entry.index:
                 self.log.append(entry)
 
-        # Update commit index
+        # Mettre à jour l'index de validation
         if args.leader_commit > self.commit_index:
             self.commit_index = min(args.leader_commit, len(self.log) - 1)
 
         return AppendEntriesReply(self.current_term, True)
 
     def _is_log_at_least_as_up_to_date(self, last_index: int, last_term: int) -> bool:
-        """Check if candidate's log is at least as up-to-date as ours."""
+        """Vérifier si le journal du candidat est au moins aussi à jour que le nôtre."""
         if not self.log:
             return True
 
@@ -623,39 +626,39 @@ class RaftNode:
 
 ---
 
-## Summary
+## Résumé
 
-### Key Takeaways
+### Points Clés à Retenir
 
-1. **Raft** was designed for understandability, separating consensus into clear subproblems
-2. **Three node states**: Follower → Candidate → Leader
-3. **Terms** provide a logical clock and prevent stale leaders
-4. **Two main RPCs**: RequestVote (election) and AppendEntries (replication + heartbeat)
-5. **Randomized timeouts** prevent split votes during elections
-6. **Five safety properties** guarantee correctness: election safety, append-only, log matching, leader completeness, and state machine safety
+1. **Raft** a été conçu pour la compréhension, séparant le consensus en sous-problèmes clairs
+2. **Trois états de nœuds** : Suiveur → Candidat → Leader
+3. **Termes** fournissent une horloge logique et empêchent les leaders obsolètes
+4. **Deux RPCs principaux** : RequestVote (élection) et AppendEntries (réplication + battement de cœur)
+5. **Délais randomisés** empêchent les votes partagés lors des élections
+6. **Cinq propriétés de sécurité** garantissent la correction : sécurité d'élection, ajout-seulement, correspondance de journal, complétude du leader et sécurité de la machine à états
 
-### Next Session
+### Prochaine Session
 
-In the next session, we'll dive into **Leader Election**:
-- How elections are triggered
-- The election algorithm in detail
-- Handling split votes
-- Leader election examples
+Dans la prochaine session, nous plongerons dans **l'Élection de Leader** :
+- Comment les élections sont déclenchées
+- L'algorithme d'élection en détail
+- Gérer les votes partagés
+- Exemples d'élection de leader
 
-### Exercises
+### Exercices
 
-1. **State Transitions**: Draw the state transition diagram for a node that starts as follower, becomes candidate, wins election as leader, then discovers a higher term.
+1. **Transitions d'États** : Dessinez le diagramme de transition d'états pour un nœud qui commence comme suiveur, devient candidat, gagne l'élection comme leader, puis découvre un terme supérieur.
 
-2. **Term Logic**: If a node receives an AppendEntries with term=7 but its current term is 9, what should it do?
+2. **Logique de Terme** : Si un nœud reçoit un AppendEntries avec terme=7 mais son terme actuel est 9, que doit-il faire ?
 
-3. **Log Comparison**: Compare these two logs and determine which is more up-to-date:
-   - Log A: last index=15, last term=5
-   - Log B: last index=12, last term=7
+3. **Comparaison de Journal** : Comparez ces deux journaux et déterminez lequel est le plus à jour :
+   - Journal A : dernier index=15, dernier terme=5
+   - Journal B : dernier index=12, dernier terme=7
 
-4. **Split Vote**: Describe a scenario where a split vote could occur, and how Raft prevents it from persisting.
+4. **Vote Partagé** : Décrivez un scénario où un vote partagé pourrait se produire, et comment Raft empêche qu'il persiste.
 
-## 🧠 Chapter Quiz
+## 🧠 Quiz du Chapitre
 
-Test your mastery of these concepts! These questions will challenge your understanding and reveal any gaps in your knowledge.
+Testez votre maîtrise de ces concepts ! Ces questions défieront votre compréhension et révéleront les lacunes dans vos connaissances.
 
 {{#quiz ../../quizzes/consensus-raft-algorithm.toml}}

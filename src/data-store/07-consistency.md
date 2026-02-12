@@ -1,30 +1,30 @@
-# Consistency Models
+# Modèles de Cohérence
 
-> **Session 5** - Full session
+> **Session 5** - Session complète
 
-## Learning Objectives
+## Objectifs d'Apprentissage
 
-- [ ] Understand different consistency models in distributed systems
-- [ ] Learn the trade-offs between strong and eventual consistency
-- [ ] Implement configurable consistency levels in a replicated store
-- [ ] Experience the effects of consistency levels through hands-on exercises
+- [ ] Comprendre les différents modèles de cohérence dans les systèmes distribués
+- [ ] Apprendre les compromis entre la cohérence forte et la cohérence événementielle
+- [ ] Implémenter des niveaux de cohérence configurables dans un magasin répliqué
+- [ ] Expérimenter les effets des niveaux de cohérence à travers des exercices pratiques
 
-## What is Consistency?
+## Qu'est-ce que la Cohérence ?
 
-In a replicated store, **consistency** defines what guarantees you have about the data you read. When data is copied across multiple nodes, you might not always see the latest write immediately.
+Dans un magasin répliqué, la **cohérence** définit les garanties que vous avez sur les données que vous lisez. Lorsque les données sont copiées sur plusieurs nœuds, vous ne verrez pas toujours l'écriture la plus récente immédiatement.
 
 ```mermaid
 graph TB
-    subgraph "Write Happens"
+    subgraph "Une Écriture se Produit"
         C[Client]
         L[Leader]
         L -->|Write "name = Alice"| L
     end
 
-    subgraph "But What Do You Read?"
-        F1[Follower 1<br/>name = Alice]
-        F2[Follower 2<br/>name = ???]
-        F3[Follower 3<br/>name = ???]
+    subgraph "Mais Que Lisez-Vous ?"
+        F1[Suiveur 1<br/>name = Alice]
+        F2[Suiveur 2<br/>name = ???]
+        F3[Suiveur 3<br/>name = ???]
 
         C -->|Read| F1
         C -->|Read| F2
@@ -32,21 +32,21 @@ graph TB
     end
 ```
 
-**The question:** If you read from a follower, will you see "Alice" or the old value?
+**La question :** Si vous lisez depuis un suiveur, verrez-vous "Alice" ou l'ancienne valeur ?
 
-The answer depends on your **consistency model**.
+La réponse dépend de votre **modèle de cohérence**.
 
-## Consistency Spectrum
+## Spectre de Cohérence
 
-Consistency models exist on a spectrum from strongest to weakest:
+Les modèles de cohérence existent sur un spectre du plus fort au plus faible :
 
 ```mermaid
 graph LR
-    A[Strong<br/>Consistency]
+    A[Cohérence<br/>Forte]
     B[Read Your Writes]
-    C[Monotonic Reads]
-    D[Causal Consistency]
-    E[Eventual<br/>Consistency]
+    C[Lectures Monotones]
+    D[Cohérence Causale]
+    E[Cohérence<br/>Événementielle]
 
     A ====> B ====> C ====> D ====> E
 
@@ -57,124 +57,124 @@ graph LR
     style E fill:#f96
 ```
 
-### Strong Consistency
+### Cohérence Forte
 
-**Definition:** Every read receives the most recent write or an error.
+**Définition :** Chaque lecture reçoit l'écriture la plus récente ou une erreur.
 
 ```mermaid
 sequenceDiagram
     participant C as Client
     participant L as Leader
-    participant F as Follower
+    participant F as Suiveur
 
-    Note over C,F: Time flows downward
+    Note over C,F: Le temps s'écoule vers le bas
 
     C->>L: SET name = "Alice"
-    L->>L: Write confirmed
+    L->>L: Écriture confirmée
 
-    Note over C,F: Strong consistency requires:
-    Note over C,F: Waiting for replication...
+    Note over C,F: La cohérence forte nécessite :
+    Note over C,F: Attendre la réplication...
 
-    L->>F: Replicate: name = "Alice"
+    L->>F: Répliquer : name = "Alice"
     F->>L: ACK
 
-    L->>C: Response: Success
+    L->>C: Réponse : Success
 
     C->>F: GET name
-    F->>C: "Alice" (always latest!)
+    F->>C: "Alice" (toujours à jour !)
 ```
 
-**Characteristics:**
-- Readers always see the latest data
-- No stale reads possible
-- Slower performance (must wait for replication)
-- Simple mental model
+**Caractéristiques :**
+- Les lecteurs voient toujours les données les plus récentes
+- Aucune lecture périmée possible
+- Performances plus lentes (doit attendre la réplication)
+- Modèle mental simple
 
-**When to use:** Financial transactions, inventory management, critical operations
+**Quand l'utiliser :** Transactions financières, gestion des stocks, opérations critiques
 
-### Eventual Consistency
+### Cohérence Événementielle
 
-**Definition:** If no new updates are made, eventually all accesses will return the last updated value.
+**Définition :** Si aucune nouvelle mise à jour n'est faite, éventuellement tous les accès retourneront la dernière valeur mise à jour.
 
 ```mermaid
 sequenceDiagram
     participant C as Client
     participant L as Leader
-    participant F1 as Follower 1
-    participant F2 as Follower 2
+    participant F1 as Suiveur 1
+    participant F2 as Suiveur 2
 
-    Note over C,F2: Time flows downward
+    Note over C,F2: Le temps s'écoule vers le bas
 
     C->>L: SET name = "Alice"
-    L->>C: Response: Success (immediate!)
+    L->>C: Réponse : Success (immédiatement !)
 
-    Note over C,F2: Leader hasn't replicated yet...
+    Note over C,F2: Le leader n'a pas encore répliqué...
 
     C->>F1: GET name
-    F1->>C: "Alice" (replicated!)
+    F1->>C: "Alice" (répliqué !)
 
     C->>F2: GET name
-    F2->>C: "Bob" (stale!)
+    F2->>C: "Bob" (périmé !)
 
-    Note over C,F2: A moment later...
+    Note over C,F2: Un moment plus tard...
 
-    L->>F2: Replicate: name = "Alice"
+    L->>F2: Répliquer : name = "Alice"
 
     C->>F2: GET name
-    F2->>C: "Alice" (updated!)
+    F2->>C: "Alice" (mis à jour !)
 ```
 
-**Characteristics:**
-- Reads are fast (no waiting for replication)
-- You might see stale data
-- Eventually, all nodes converge
-- More complex mental model
+**Caractéristiques :**
+- Les lectures sont rapides (pas d'attente de réplication)
+- Vous pouvez voir des données périmées
+- Éventuellement, tous les nœuds convergent
+- Modèle mental plus complexe
 
-**When to use:** Social media feeds, product recommendations, analytics
+**Quand l'utiliser :** Flux de médias sociaux, recommandations de produits, analyses
 
-### Read-Your-Writes Consistency
+### Cohérence Read-Your-Writes
 
-A middle ground: you always see your own writes, but might not see others' writes immediately.
+Un terrain d'entente : vous voyez toujours vos propres écritures, mais ne voyez pas forcément les écritures des autres immédiatement.
 
 ```mermaid
 sequenceDiagram
     participant C1 as Client 1
     participant C2 as Client 2
     participant L as Leader
-    participant F as Follower
+    participant F as Suiveur
 
     C1->>L: SET name = "Alice"
     L->>C1: Success
 
     C1->>F: GET name
-    Note over C1,F: Read-your-writes:<br/>C1 sees "Alice"
+    Note over C1,F: Read-your-writes:<br/>C1 voit "Alice"
     F->>C1: "Alice"
 
     C2->>F: GET name
-    Note over C2,F: Might see stale data
-    F->>C2: "Bob" (stale!)
+    Note over C2,F: Peut voir des données périmées
+    F->>C2: "Bob" (périmé !)
 ```
 
-## The CAP Theorem Revisited
+## Le Théorème CAP Réexaminé
 
-You learned about CAP in Session 4. Let's connect it to consistency:
+Vous avez appris CAP dans la Session 4. Relions-le à la cohérence :
 
-| Combination | Consistency Model | Example Systems |
-|-------------|-------------------|-----------------|
-| **CP** | Strong consistency | ZooKeeper, etcd, MongoDB (with w:majority) |
-| **AP** | Eventual consistency | Cassandra, DynamoDB, CouchDB |
-| **CA** (impossible at scale) | Strong consistency | Single-node databases (RDBMS) |
+| Combinaison | Modèle de Cohérence | Systèmes Exemple |
+|-------------|---------------------|------------------|
+| **CP** | Cohérence forte | ZooKeeper, etcd, MongoDB (avec w:majority) |
+| **AP** | Cohérence événementielle | Cassandra, DynamoDB, CouchDB |
+| **CA** (impossible à grande échelle) | Cohérence forte | Bases de données à nœud unique (SGBDR) |
 
-## Quorum-Based Consistency
+## Cohérence Basée sur Quorum
 
-A practical way to control consistency is using **quorums**. A quorum is a majority of nodes.
+Un moyen pratique de contrôler la cohérence est d'utiliser des **quorums**. Un quorum est une majorité de nœuds.
 
 ```mermaid
 graph TB
-    subgraph "3-Node Cluster"
-        N1[Node 1]
-        N2[Node 2]
-        N3[Node 3]
+    subgraph "Cluster à 3 Nœuds"
+        N1[Nœud 1]
+        N2[Nœud 2]
+        N3[Nœud 3]
 
         Q[Quorum = 2<br/>⌈3/2⌉ = 2]
     end
@@ -186,42 +186,42 @@ graph TB
     style Q fill:#6f6,stroke:#333,stroke-width:3px
 ```
 
-### Write Quorum (W)
+### Quorum d'Écriture (W)
 
-Number of nodes that must acknowledge a write:
-
-```
-W > N/2  → Strong consistency (majority)
-W = 1    → Fast but weak consistency
-W = N    → Strongest but slowest
-```
-
-### Read Quorum (R)
-
-Number of nodes to query and compare for a read:
+Nombre de nœuds qui doivent acquitter une écriture :
 
 ```
-R + W > N  → Strong consistency guaranteed
-R + W ≤ N  → Eventual consistency
+W > N/2  → Cohérence forte (majorité)
+W = 1    → Rapide mais cohérence faible
+W = N    → La plus forte mais la plus lente
 ```
 
-### Consistency Levels
+### Quorum de Lecture (R)
 
-| R + W | Consistency | Performance | Use Case |
-|-------|-------------|-------------|----------|
-| **N + 1 > N** (impossible) | Strongest | Slow | Critical data |
-| **R + W > N** | Strong | Medium | Banking, inventory |
-| **R + W ≤ N** | Eventual | Fast | Social media, cache |
+Nombre de nœuds à interroger et comparer pour une lecture :
+
+```
+R + W > N  → Cohérence forte garantie
+R + W ≤ N  → Cohérence événementielle
+```
+
+### Niveaux de Cohérence
+
+| R + W | Cohérence | Performance | Cas d'Usage |
+|-------|-------------|-------------|---------------|
+| **N + 1 > N** (impossible) | La plus forte | Lente | Données critiques |
+| **R + W > N** | Forte | Moyenne | Banque, stocks |
+| **R + W ≤ N** | Événementielle | Rapide | Médias sociaux, cache |
 
 ---
 
-## Implementation
+## Implémentation
 
-We'll extend our replicated store from Session 4 to support configurable consistency levels.
+Nous allons étendre notre magasin répliqué de la Session 4 pour supporter des niveaux de cohérence configurables.
 
-### TypeScript Implementation
+### Implémentation TypeScript
 
-**Project Structure:**
+**Structure du Projet :**
 ```
 consistent-store-ts/
 ├── package.json
@@ -229,7 +229,7 @@ consistent-store-ts/
 ├── Dockerfile
 ├── docker-compose.yml
 └── src/
-    └── node.ts       # Node with configurable consistency
+    └── node.ts       # Nœud avec cohérence configurable
 ```
 
 **consistent-store-ts/src/node.ts**
@@ -237,7 +237,7 @@ consistent-store-ts/
 import http from 'http';
 
 /**
- * Node configuration
+ * Configuration du nœud
  */
 const config = {
   nodeId: process.env.NODE_ID || 'node-1',
@@ -246,7 +246,7 @@ const config = {
   heartbeatInterval: 2000,
   electionTimeout: 6000,
 
-  // Consistency settings
+  // Paramètres de cohérence
   writeQuorum: parseInt(process.env.WRITE_QUORUM || '2'),  // W
   readQuorum: parseInt(process.env.READ_QUORUM || '1'),    // R
 };
@@ -255,7 +255,7 @@ type NodeRole = 'leader' | 'follower' | 'candidate';
 type ConsistencyLevel = 'strong' | 'eventual' | 'read_your_writes';
 
 /**
- * Replicated Store Node with Configurable Consistency
+ * Nœud de Magasin Répliqué avec Cohérence Configurable
  */
 class StoreNode {
   public nodeId: string;
@@ -268,7 +268,7 @@ class StoreNode {
   private lastHeartbeat: number;
   private heartbeatTimer?: NodeJS.Timeout;
   private electionTimer?: NodeJS.Timeout;
-  private pendingWrites: Map<string, any[]>;  // For read-your-writes
+  private pendingWrites: Map<string, any[]>;  // Pour read-your-writes
 
   constructor(nodeId: string, peers: string[]) {
     this.nodeId = nodeId;
@@ -285,13 +285,13 @@ class StoreNode {
   }
 
   /**
-   * Start election timeout timer
+   * Démarrer le timer de timeout d'élection
    */
   private startElectionTimer() {
     this.electionTimer = setTimeout(() => {
       const timeSinceHeartbeat = Date.now() - this.lastHeartbeat;
       if (timeSinceHeartbeat > config.electionTimeout && this.role !== 'leader') {
-        console.log(`[${this.nodeId}] Election timeout! Starting election...`);
+        console.log(`[${this.nodeId}] Election timeout ! Démarrage de l'élection...`);
         this.startElection();
       }
       this.startElectionTimer();
@@ -299,7 +299,7 @@ class StoreNode {
   }
 
   /**
-   * Start leader election
+   * Démarrer l'élection de leader
    */
   private startElection() {
     this.term++;
@@ -313,22 +313,22 @@ class StoreNode {
     } else {
       this.role = 'follower';
       this.leaderId = lowestNode;
-      console.log(`[${this.nodeId}] Waiting for ${lowestNode} to become leader`);
+      console.log(`[${this.nodeId}] En attente de ${lowestNode} pour devenir leader`);
     }
   }
 
   /**
-   * Become the leader
+   * Devenir leader
    */
   private becomeLeader() {
     this.role = 'leader';
     this.leaderId = this.nodeId;
-    console.log(`[${this.nodeId}] 👑 Became LEADER for term ${this.term}`);
+    console.log(`[${this.nodeId}] 👑 Devenu LEADER pour le terme ${this.term}`);
     this.replicateToFollowers();
   }
 
   /**
-   * Start heartbeat to followers
+   * Démarrer le heartbeat vers les suiveurs
    */
   private startHeartbeat() {
     this.heartbeatTimer = setInterval(() => {
@@ -339,7 +339,7 @@ class StoreNode {
   }
 
   /**
-   * Send heartbeat to all followers
+   * Envoyer le heartbeat à tous les suiveurs
    */
   private sendHeartbeat() {
     const heartbeat = {
@@ -351,17 +351,17 @@ class StoreNode {
 
     this.peers.forEach(peerUrl => {
       this.sendToPeer(peerUrl, '/internal/heartbeat', heartbeat)
-        .catch(err => console.log(`[${this.nodeId}] Failed heartbeat to ${peerUrl}`));
+        .catch(err => console.log(`[${this.nodeId}] Échec du heartbeat vers ${peerUrl}`));
     });
   }
 
   /**
-   * Replicate data to followers with quorum acknowledgment
+   * Répliquer les données aux suiveurs avec accusé de réception du quorum
    */
   private async replicateToFollowers(): Promise<boolean> {
     const dataObj = Object.fromEntries(this.data);
 
-    // Send to all followers in parallel
+    // Envoyer à tous les suiveurs en parallèle
     const promises = this.peers.map(peerUrl =>
       this.sendToPeer(peerUrl, '/internal/replicate', {
         type: 'replicate',
@@ -369,26 +369,26 @@ class StoreNode {
         term: this.term,
         data: dataObj,
       }).catch(err => {
-        console.log(`[${this.nodeId}] Replication failed to ${peerUrl}`);
+        console.log(`[${this.nodeId}] Réplication échouée vers ${peerUrl}`);
         return false;
       })
     );
 
-    // Wait for all to complete
+    // Attendre que tous se terminent
     const results = await Promise.all(promises);
 
-    // Count successes (this node counts as 1)
+    // Compter les succès (ce nœud compte comme 1)
     const successes = results.filter(r => r !== false).length + 1;
 
-    // Check if we achieved write quorum
+    // Vérifier si nous avons atteint le quorum d'écriture
     const achievedQuorum = successes >= config.writeQuorum;
-    console.log(`[${this.nodeId}] Replication: ${successes}/${this.peers.length + 1} nodes (W=${config.writeQuorum})`);
+    console.log(`[${this.nodeId}] Réplication : ${successes}/${this.peers.length + 1} nœuds (W=${config.writeQuorum})`);
 
     return achievedQuorum;
   }
 
   /**
-   * Handle heartbeat from leader
+   * Gérer le heartbeat du leader
    */
   handleHeartbeat(heartbeat: any) {
     if (heartbeat.term >= this.term) {
@@ -402,7 +402,7 @@ class StoreNode {
   }
 
   /**
-   * Handle replication from leader
+   * Gérer la réplication du leader
    */
   handleReplication(message: any) {
     if (message.term >= this.term) {
@@ -418,7 +418,7 @@ class StoreNode {
   }
 
   /**
-   * Send data to peer node
+   * Envoyer des données à un nœud pair
    */
   private async sendToPeer(peerUrl: string, path: string, data: any): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -443,7 +443,7 @@ class StoreNode {
   }
 
   /**
-   * Set a key-value pair with quorum acknowledgment
+   * Définir une paire clé-valeur avec accusé de réception du quorum
    */
   async set(key: string, value: any): Promise<{ success: boolean; achievedQuorum: boolean }> {
     if (this.role !== 'leader') {
@@ -453,32 +453,32 @@ class StoreNode {
     this.data.set(key, value);
     console.log(`[${this.nodeId}] SET ${key} = ${JSON.stringify(value)}`);
 
-    // Replicate to followers
+    // Répliquer aux suiveurs
     const achievedQuorum = await this.replicateToFollowers();
 
     return { success: true, achievedQuorum };
   }
 
   /**
-   * Get a value with configurable consistency
+   * Obtenir une valeur avec cohérence configurable
    */
   async get(key: string, consistency: ConsistencyLevel = 'eventual'): Promise<any> {
     const localValue = this.data.get(key);
 
-    // For eventual consistency, return local value immediately
+    // Pour la cohérence événementielle, retourner la valeur locale immédiatement
     if (consistency === 'eventual') {
-      console.log(`[${this.nodeId}] GET ${key} => ${JSON.stringify(localValue)} (eventual)`);
+      console.log(`[${this.nodeId}] GET ${key} => ${JSON.stringify(localValue)} (événementielle)`);
       return localValue;
     }
 
-    // For strong consistency, query quorum of nodes
+    // Pour la cohérence forte, interroger un quorum de nœuds
     if (consistency === 'strong') {
       const values = await this.getFromQuorum(key);
-      console.log(`[${this.nodeId}] GET ${key} => ${JSON.stringify(values.latest)} (strong from ${values.responses} nodes)`);
+      console.log(`[${this.nodeId}] GET ${key} => ${JSON.stringify(values.latest)} (forte depuis ${values.responses} nœuds)`);
       return values.latest;
     }
 
-    // For read-your-writes, check pending writes
+    // Pour read-your-writes, vérifier les écritures en attente
     if (consistency === 'read_your_writes') {
       const pending = this.pendingWrites.get(key);
       const valueToReturn = pending && pending.length > 0 ? pending[pending.length - 1] : localValue;
@@ -490,44 +490,44 @@ class StoreNode {
   }
 
   /**
-   * Query quorum of nodes and return most recent value
+   * Interroger un quorum de nœuds et retourner la valeur la plus récente
    */
   private async getFromQuorum(key: string): Promise<{ latest: any; responses: number }> {
-    // Query all peers
+    // Interroger tous les pairs
     const promises = this.peers.map(peerUrl =>
       this.queryPeer(peerUrl, '/internal/get', { key })
         .then(result => ({ success: true, value: result.value, version: result.version || 0 }))
         .catch(err => {
-          console.log(`[${this.nodeId}] Query failed to ${peerUrl}`);
+          console.log(`[${this.nodeId}] Query échouée vers ${peerUrl}`);
           return { success: false, value: null, version: 0 };
         })
     );
 
     const results = await Promise.all(promises);
 
-    // Add local value
+    // Ajouter la valeur locale
     results.push({
       success: true,
       value: this.data.get(key),
       version: this.data.has(key) ? 1 : 0,
     });
 
-    // Count successful responses
+    // Compter les réponses réussies
     const successful = results.filter(r => r.success);
 
-    // Return if we have read quorum
+    // Retourner si nous avons le quorum de lecture
     if (successful.length >= config.readQuorum) {
-      // Return most recent value (simple version: first non-null)
+      // Retourner la valeur la plus récente (version simple : première non-nulle)
       const latest = successful.find(r => r.value !== undefined)?.value;
       return { latest, responses: successful.length };
     }
 
-    // Fallback to local value
+    // Retour à la valeur locale
     return { latest: this.data.get(key), responses: successful.length };
   }
 
   /**
-   * Query a peer for a key
+   * Interroger un pair pour une clé
    */
   private async queryPeer(peerUrl: string, path: string, data: any): Promise<any> {
     return new Promise((resolve, reject) => {
@@ -556,7 +556,7 @@ class StoreNode {
   }
 
   /**
-   * Delete a key
+   * Supprimer une clé
    */
   async delete(key: string): Promise<{ success: boolean; achievedQuorum: boolean }> {
     if (this.role !== 'leader') {
@@ -572,7 +572,7 @@ class StoreNode {
   }
 
   /**
-   * Get node status
+   * Obtenir le statut du nœud
    */
   getStatus() {
     return {
@@ -591,11 +591,11 @@ class StoreNode {
   }
 }
 
-// Create the node
+// Créer le nœud
 const node = new StoreNode(config.nodeId, config.peers);
 
 /**
- * HTTP Server
+ * Serveur HTTP
  */
 const server = http.createServer((req, res) => {
   res.setHeader('Content-Type', 'application/json');
@@ -611,7 +611,7 @@ const server = http.createServer((req, res) => {
 
   const url = new URL(req.url || '', `http://${req.headers.host}`);
 
-  // Route: POST /internal/heartbeat
+  // Route : POST /internal/heartbeat
   if (req.method === 'POST' && url.pathname === '/internal/heartbeat') {
     let body = '';
     req.on('data', chunk => body += chunk);
@@ -629,7 +629,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Route: POST /internal/replicate
+  // Route : POST /internal/replicate
   if (req.method === 'POST' && url.pathname === '/internal/replicate') {
     let body = '';
     req.on('data', chunk => body += chunk);
@@ -647,7 +647,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Route: POST /internal/get - Internal query for quorum reads
+  // Route : POST /internal/get - Requête interne pour les lectures de quorum
   if (req.method === 'POST' && url.pathname === '/internal/get') {
     let body = '';
     req.on('data', chunk => body += chunk);
@@ -665,14 +665,14 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Route: GET /status
+  // Route : GET /status
   if (req.method === 'GET' && url.pathname === '/status') {
     res.writeHead(200);
     res.end(JSON.stringify(node.getStatus()));
     return;
   }
 
-  // Route: GET /key/{key}?consistency=strong|eventual|read_your_writes
+  // Route : GET /key/{key}?consistency=strong|eventual|read_your_writes
   if (req.method === 'GET' && url.pathname.startsWith('/key/')) {
     const key = url.pathname.slice(5);
     const consistency = (url.searchParams.get('consistency') || 'eventual') as ConsistencyLevel;
@@ -689,7 +689,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Route: PUT /key/{key}
+  // Route : PUT /key/{key}
   if (req.method === 'PUT' && url.pathname.startsWith('/key/')) {
     const key = url.pathname.slice(5);
 
@@ -727,7 +727,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Route: DELETE /key/{key}
+  // Route : DELETE /key/{key}
   if (req.method === 'DELETE' && url.pathname.startsWith('/key/')) {
     const key = url.pathname.slice(5);
 
@@ -759,14 +759,14 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(config.port, () => {
-  console.log(`[${config.nodeId}] Consistent Store listening on port ${config.port}`);
-  console.log(`[${config.nodeId}] Write Quorum (W): ${config.writeQuorum}, Read Quorum (R): ${config.readQuorum}`);
-  console.log(`[${config.nodeId}] Peers: ${config.peers.join(', ') || 'none'}`);
-  console.log(`[${config.nodeId}] Available endpoints:`);
-  console.log(`  GET  /status                         - Node status`);
-  console.log(`  GET  /key/{key}?consistency=level   - Get with consistency level`);
-  console.log(`  PUT  /key/{key}                      - Set value (leader only)`);
-  console.log(`  DEL  /key/{key}                      - Delete key (leader only)`);
+  console.log(`[${config.nodeId}] Consistent Store écoutant sur le port ${config.port}`);
+  console.log(`[${config.nodeId}] Quorum d'Écriture (W) : ${config.writeQuorum}, Quorum de Lecture (R) : ${config.readQuorum}`);
+  console.log(`[${config.nodeId}] Pairs : ${config.peers.join(', ') || 'none'}`);
+  console.log(`[${config.nodeId}] Points de terminaison disponibles :`);
+  console.log(`  GET  /status                         - Statut du nœud`);
+  console.log(`  GET  /key/{key}?consistency=level   - Obtenir avec niveau de cohérence`);
+  console.log(`  PUT  /key/{key}                      - Définir une valeur (leader uniquement)`);
+  console.log(`  DEL  /key/{key}                      - Supprimer une clé (leader uniquement)`);
 });
 ```
 
@@ -825,7 +825,7 @@ CMD ["npm", "start"]
 
 ---
 
-## Python Implementation
+## Implémentation Python
 
 **consistent-store-py/src/node.py**
 ```python
@@ -843,7 +843,7 @@ from urllib.error import URLError
 ConsistencyLevel = Literal['strong', 'eventual', 'read_your_writes']
 
 class StoreNode:
-    """Replicated store node with configurable consistency."""
+    """Nœud de magasin répliqué avec cohérence configurable."""
 
     def __init__(self, node_id: str, peers: List[str]):
         self.node_id = node_id
@@ -861,25 +861,25 @@ class StoreNode:
         self.write_quorum = int(os.environ.get('WRITE_QUORUM', '2'))
         self.read_quorum = int(os.environ.get('READ_QUORUM', '1'))
 
-        # Start timers
+        # Démarrer les timers
         self.start_election_timer()
         self.start_heartbeat_thread()
 
     def start_election_timer(self):
-        """Start election timeout timer."""
+        """Démarrer le timer de timeout d'élection."""
         def election_timer():
             while True:
                 time.sleep(1)
                 time_since = time.time() - self.last_heartbeat
                 if time_since > self.election_timeout and self.role != 'leader':
-                    print(f"[{self.node_id}] Election timeout! Starting election...")
+                    print(f"[{self.node_id}] Election timeout ! Démarrage de l'élection...")
                     self.start_election()
 
         thread = threading.Thread(target=election_timer, daemon=True)
         thread.start()
 
     def start_election(self):
-        """Start leader election."""
+        """Démarrer l'élection de leader."""
         self.term += 1
         self.role = 'candidate'
 
@@ -891,17 +891,17 @@ class StoreNode:
         else:
             self.role = 'follower'
             self.leader_id = lowest_node
-            print(f"[{self.node_id}] Waiting for {lowest_node} to become leader")
+            print(f"[{self.node_id}] En attente de {lowest_node} pour devenir leader")
 
     def become_leader(self):
-        """Become the leader."""
+        """Devenir leader."""
         self.role = 'leader'
         self.leader_id = self.node_id
-        print(f"[{self.node_id}] 👑 Became LEADER for term {self.term}")
+        print(f"[{self.node_id}] 👑 Devenu LEADER pour le terme {self.term}")
         self.replicate_to_followers()
 
     def start_heartbeat_thread(self):
-        """Start heartbeat to followers."""
+        """Démarrer le heartbeat vers les suiveurs."""
         def heartbeat_loop():
             while True:
                 time.sleep(self.heartbeat_interval)
@@ -912,7 +912,7 @@ class StoreNode:
         thread.start()
 
     def send_heartbeat(self):
-        """Send heartbeat to all followers."""
+        """Envoyer le heartbeat à tous les suiveurs."""
         heartbeat = {
             'type': 'heartbeat',
             'leader_id': self.node_id,
@@ -924,10 +924,10 @@ class StoreNode:
             try:
                 self.send_to_peer(peer, '/internal/heartbeat', heartbeat)
             except Exception as e:
-                print(f"[{self.node_id}] Failed heartbeat to {peer}: {e}")
+                print(f"[{self.node_id}] Échec du heartbeat vers {peer} : {e}")
 
     def replicate_to_followers(self) -> bool:
-        """Replicate data to followers and check quorum."""
+        """Répliquer les données aux suiveurs et vérifier le quorum."""
         message = {
             'type': 'replicate',
             'leader_id': self.node_id,
@@ -935,22 +935,22 @@ class StoreNode:
             'data': self.data,
         }
 
-        successes = 1  # This node counts
+        successes = 1  # Ce nœud compte
 
         for peer in self.peers:
             try:
                 self.send_to_peer(peer, '/internal/replicate', message)
                 successes += 1
             except Exception as e:
-                print(f"[{self.node_id}] Replication failed to {peer}: {e}")
+                print(f"[{self.node_id}] Réplication échouée vers {peer} : {e}")
 
         achieved_quorum = successes >= self.write_quorum
-        print(f"[{self.node_id}] Replication: {successes}/{len(self.peers) + 1} nodes (W={self.write_quorum})")
+        print(f"[{self.node_id}] Réplication : {successes}/{len(self.peers) + 1} nœuds (W={self.write_quorum})")
 
         return achieved_quorum
 
     def handle_heartbeat(self, heartbeat: dict):
-        """Handle heartbeat from leader."""
+        """Gérer le heartbeat du leader."""
         if heartbeat['term'] >= self.term:
             self.term = heartbeat['term']
             self.last_heartbeat = time.time()
@@ -959,7 +959,7 @@ class StoreNode:
                 self.role = 'follower'
 
     def handle_replication(self, message: dict):
-        """Handle replication from leader."""
+        """Gérer la réplication du leader."""
         if message['term'] >= self.term:
             self.term = message['term']
             self.leader_id = message['leader_id']
@@ -968,7 +968,7 @@ class StoreNode:
             self.data.update(message['data'])
 
     def send_to_peer(self, peer_url: str, path: str, data: dict) -> None:
-        """Send data to peer node."""
+        """Envoyer des données à un nœud pair."""
         url = f"{peer_url}{path}"
         body = json.dumps(data).encode('utf-8')
 
@@ -978,7 +978,7 @@ class StoreNode:
                 raise Exception(f"Status {response.status}")
 
     def set(self, key: str, value: Any) -> Dict[str, Any]:
-        """Set a key-value pair with quorum acknowledgment."""
+        """Définir une paire clé-valeur avec accusé de réception du quorum."""
         if self.role != 'leader':
             return {'success': False, 'achieved_quorum': False}
 
@@ -990,16 +990,16 @@ class StoreNode:
         return {'success': True, 'achieved_quorum': achieved_quorum}
 
     def get(self, key: str, consistency: ConsistencyLevel = 'eventual') -> Any:
-        """Get a value with configurable consistency."""
+        """Obtenir une valeur avec cohérence configurable."""
         local_value = self.data.get(key)
 
         if consistency == 'eventual':
-            print(f"[{self.node_id}] GET {key} => {json.dumps(local_value)} (eventual)")
+            print(f"[{self.node_id}] GET {key} => {json.dumps(local_value)} (événementielle)")
             return local_value
 
         if consistency == 'strong':
             latest, responses = self.get_from_quorum(key)
-            print(f"[{self.node_id}] GET {key} => {json.dumps(latest)} (strong from {responses} nodes)")
+            print(f"[{self.node_id}] GET {key} => {json.dumps(latest)} (forte depuis {responses} nœuds)")
             return latest
 
         if consistency == 'read_your_writes':
@@ -1011,10 +1011,10 @@ class StoreNode:
         return local_value
 
     def get_from_quorum(self, key: str) -> tuple:
-        """Query quorum of nodes and return most recent value."""
+        """Interroger un quorum de nœuds et retourner la valeur la plus récente."""
         results = []
 
-        # Query all peers
+        # Interroger tous les pairs
         for peer in self.peers:
             try:
                 result = self.query_peer(peer, '/internal/get', {'key': key})
@@ -1024,21 +1024,21 @@ class StoreNode:
                     'version': result.get('version', 0),
                 })
             except Exception as e:
-                print(f"[{self.node_id}] Query failed to {peer}: {e}")
+                print(f"[{self.node_id}] Query échouée vers {peer} : {e}")
                 results.append({'success': False, 'value': None, 'version': 0})
 
-        # Add local value
+        # Ajouter la valeur locale
         results.append({
             'success': True,
             'value': self.data.get(key),
             'version': 1 if key in self.data else 0,
         })
 
-        # Filter successful responses
+        # Filtrer les réponses réussies
         successful = [r for r in results if r['success']]
 
         if len(successful) >= self.read_quorum:
-            # Return first non-null value
+            # Retourner la première valeur non-nulle
             for r in successful:
                 if r['value'] is not None:
                     return r['value'], len(successful)
@@ -1046,7 +1046,7 @@ class StoreNode:
         return self.data.get(key), len(successful)
 
     def query_peer(self, peer_url: str, path: str, data: dict) -> dict:
-        """Query a peer for a key."""
+        """Interroger un pair pour une clé."""
         url = f"{peer_url}{path}"
         body = json.dumps(data).encode('utf-8')
 
@@ -1057,7 +1057,7 @@ class StoreNode:
             raise Exception(f"Status {response.status}")
 
     def delete(self, key: str) -> Dict[str, Any]:
-        """Delete a key."""
+        """Supprimer une clé."""
         if self.role != 'leader':
             return {'success': False, 'achieved_quorum': False}
 
@@ -1071,7 +1071,7 @@ class StoreNode:
         return {'success': existed, 'achieved_quorum': True}
 
     def get_status(self) -> dict:
-        """Get node status."""
+        """Obtenir le statut du nœud."""
         return {
             'node_id': self.node_id,
             'role': self.role,
@@ -1087,7 +1087,7 @@ class StoreNode:
         }
 
 
-# Create the node
+# Créer le nœud
 config = {
     'node_id': os.environ.get('NODE_ID', 'node-1'),
     'port': int(os.environ.get('PORT', '4000')),
@@ -1098,10 +1098,10 @@ node = StoreNode(config['node_id'], config['peers'])
 
 
 class NodeHandler(BaseHTTPRequestHandler):
-    """HTTP request handler for store node."""
+    """Gestionnaire de requêtes HTTP pour le nœud de magasin."""
 
     def send_json_response(self, status: int, data: dict):
-        """Send a JSON response."""
+        """Envoyer une réponse JSON."""
         self.send_response(status)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Access-Control-Allow-Origin', '*')
@@ -1109,7 +1109,7 @@ class NodeHandler(BaseHTTPRequestHandler):
         self.wfile.write(json.dumps(data).encode())
 
     def do_OPTIONS(self):
-        """Handle CORS preflight."""
+        """Gérer le pré-vol CORS."""
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
@@ -1117,7 +1117,7 @@ class NodeHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
-        """Handle POST requests."""
+        """Gérer les requêtes POST."""
         parsed = urlparse(self.path)
 
         if parsed.path == '/internal/heartbeat':
@@ -1157,7 +1157,7 @@ class NodeHandler(BaseHTTPRequestHandler):
         self.send_json_response(404, {'error': 'Not found'})
 
     def do_GET(self):
-        """Handle GET requests."""
+        """Gérer les requêtes GET."""
         parsed = urlparse(self.path)
 
         if parsed.path == '/status':
@@ -1186,7 +1186,7 @@ class NodeHandler(BaseHTTPRequestHandler):
         self.send_json_response(404, {'error': 'Not found'})
 
     def do_PUT(self):
-        """Handle PUT requests."""
+        """Gérer les requêtes PUT."""
         parsed = urlparse(self.path)
 
         if parsed.path.startswith('/key/'):
@@ -1221,7 +1221,7 @@ class NodeHandler(BaseHTTPRequestHandler):
         self.send_json_response(404, {'error': 'Not found'})
 
     def do_DELETE(self):
-        """Handle DELETE requests."""
+        """Gérer les requêtes DELETE."""
         parsed = urlparse(self.path)
 
         if parsed.path.startswith('/key/'):
@@ -1245,22 +1245,22 @@ class NodeHandler(BaseHTTPRequestHandler):
         self.send_json_response(404, {'error': 'Not found'})
 
     def log_message(self, format, *args):
-        """Suppress default logging."""
+        """Supprimer la journalisation par défaut."""
         pass
 
 
 def run_server(port: int):
-    """Start the HTTP server."""
+    """Démarrer le serveur HTTP."""
     server_address = ('', port)
     httpd = HTTPServer(server_address, NodeHandler)
-    print(f"[{config['node_id']}] Consistent Store listening on port {port}")
-    print(f"[{config['node_id']}] Write Quorum (W): {node.write_quorum}, Read Quorum (R): {node.read_quorum}")
-    print(f"[{config['node_id']}] Peers: {', '.join(config['peers']) or 'none'}")
-    print(f"[{config['node_id']}] Available endpoints:")
-    print(f"  GET  /status                         - Node status")
-    print(f"  GET  /key/{{key}}?consistency=level   - Get with consistency level")
-    print(f"  PUT  /key/{{key}}                      - Set value (leader only)")
-    print(f"  DEL  /key/{{key}}                      - Delete key (leader only)")
+    print(f"[{config['node_id']}] Consistent Store écoutant sur le port {port}")
+    print(f"[{config['node_id']}] Quorum d'Écriture (W) : {node.write_quorum}, Quorum de Lecture (R) : {node.read_quorum}")
+    print(f"[{config['node_id']}] Pairs : {', '.join(config['peers']) or 'none'}")
+    print(f"[{config['node_id']}] Points de terminaison disponibles :")
+    print(f"  GET  /status                         - Statut du nœud")
+    print(f"  GET  /key/{{key}}?consistency=level   - Obtenir avec niveau de cohérence")
+    print(f"  PUT  /key/{{key}}                      - Définir une valeur (leader uniquement)")
+    print(f"  DEL  /key/{{key}}                      - Supprimer une clé (leader uniquement)")
     httpd.serve_forever()
 
 
@@ -1270,7 +1270,7 @@ if __name__ == '__main__':
 
 **consistent-store-py/requirements.txt**
 ```
-# No external dependencies - uses standard library only
+# Pas de dépendances externes - utilise uniquement la bibliothèque standard
 ```
 
 **consistent-store-py/Dockerfile**
@@ -1291,9 +1291,9 @@ CMD ["python", "src/node.py"]
 
 ---
 
-## Docker Compose Setup
+## Configuration Docker Compose
 
-### TypeScript Version
+### Version TypeScript
 
 **examples/03-consistent-store/ts/docker-compose.yml**
 ```yaml
@@ -1347,7 +1347,7 @@ networks:
     driver: bridge
 ```
 
-### Python Version
+### Version Python
 
 **examples/03-consistent-store/py/docker-compose.yml**
 ```yaml
@@ -1403,64 +1403,64 @@ networks:
 
 ---
 
-## Running the Example
+## Exécution de l'Exemple
 
-### Step 1: Start the Cluster
+### Étape 1 : Démarrer le Cluster
 
-**TypeScript:**
+**TypeScript :**
 ```bash
 cd distributed-systems-course/examples/03-consistent-store/ts
 docker-compose up --build
 ```
 
-**Python:**
+**Python :**
 ```bash
 cd distributed-systems-course/examples/03-consistent-store/py
 docker-compose up --build
 ```
 
-You should see:
+Vous devriez voir :
 ```
-consistent-ts-node1 | [node-1] 👑 Became LEADER for term 1
-consistent-ts-node1 | [node-1] Write Quorum (W): 2, Read Quorum (R): 1
-consistent-ts-node2 | [node-2] Waiting for node-1 to become leader
-consistent-ts-node3 | [node-3] Waiting for node-1 to become leader
+consistent-ts-node1 | [node-1] 👑 Devenu LEADER pour le terme 1
+consistent-ts-node1 | [node-1] Quorum d'Écriture (W) : 2, Quorum de Lecture (R) : 1
+consistent-ts-node2 | [node-2] En attente de node-1 pour devenir leader
+consistent-ts-node3 | [node-3] En attente de node-1 pour devenir leader
 ```
 
-### Step 2: Test Eventual Consistency (Default)
+### Étape 2 : Tester la Cohérence Événementielle (Défaut)
 
 ```bash
-# Write to leader
+# Écrire au leader
 curl -X PUT http://localhost:4001/key/name \
   -H "Content-Type: application/json" \
   -d '"Alice"'
 
-# Immediately read from follower (eventual consistency)
+# Lire immédiatement depuis le suiveur (cohérence événementielle)
 curl http://localhost:4002/key/name
 ```
 
-You might see:
-- **Immediately after write:** `null` (follower hasn't received replication yet)
-- **A moment later:** `"Alice"` (follower caught up)
+Vous pourriez voir :
+- **Immédiatement après l'écriture :** `null` (le suiveur n'a pas encore reçu la réplication)
+- **Un moment plus tard :** `"Alice"` (le suiveur a récupéré)
 
-### Step 3: Test Strong Consistency
+### Étape 3 : Tester la Cohérence Forte
 
 ```bash
-# Read with strong consistency (waits for quorum)
+# Lire avec cohérence forte (attend le quorum)
 curl "http://localhost:4002/key/name?consistency=strong"
 ```
 
-This queries multiple nodes and returns the latest confirmed value.
+Cela interroge plusieurs nœuds et retourne la valeur confirmée la plus récente.
 
-### Step 4: Observe Quorum Behavior
+### Étape 4 : Observer le Comportement du Quorum
 
-Check the status to see your quorum settings:
+Vérifiez le statut pour voir vos paramètres de quorum :
 
 ```bash
 curl http://localhost:4001/status
 ```
 
-Response:
+Réponse :
 ```json
 {
   "nodeId": "node-1",
@@ -1473,45 +1473,45 @@ Response:
 }
 ```
 
-### Step 5: Test Different Quorum Settings
+### Étape 5 : Tester Différents Paramètres de Quorum
 
-Stop the docker-compose and modify the environment variables:
+Arrêtez docker-compose et modifiez les variables d'environnement :
 
-**Try W=3 (Strongest):**
+**Essayer W=3 (Le plus fort) :**
 ```yaml
 environment:
   - WRITE_QUORUM=3
   - READ_QUORUM=1
 ```
 
-**Try W=1 (Weakest):**
+**Essayer W=1 (Le plus faible) :**
 ```yaml
 environment:
   - WRITE_QUORUM=1
   - READ_QUORUM=1
 ```
 
-Observe how the system behaves differently with each setting.
+Observez comment le système se comporte différemment avec chaque paramètre.
 
-## Consistency Comparison
+## Comparaison de Cohérence
 
 ```mermaid
 graph TB
-    subgraph "Same Data, Different Consistency Levels"
-        W[Write: name = Alice]
+    subgraph "Mêmes Données, Différents Niveaux de Cohérence"
+        W[Write : name = Alice]
 
-        subgraph "Strong Consistency<br/>Slow but Accurate"
-            S1[Node 1: Alice]
-            S2[Node 2: Alice]
-            S3[Node 3: Alice]
-            R1[Read → Alice]
+        subgraph "Cohérence Forte<br/>Lente mais Précise"
+            S1[Nœud 1 : Alice]
+            S2[Nœud 2 : Alice]
+            S3[Nœud 3 : Alice]
+            R1[Lire → Alice]
         end
 
-        subgraph "Eventual Consistency<br/>Fast but Maybe Stale"
-            E1[Node 1: Alice]
-            E2[Node 2: Bob]
-            E3[Node 3: ???]
-            R2[Read → Bob or ???]
+        subgraph "Cohérence Événementielle<br/>Rapide mais Possiblement Périmée"
+            E1[Nœud 1 : Alice]
+            E2[Nœud 2 : Bob]
+            E3[Nœud 3 : ???]
+            R2[Lire → Bob ou ???]
         end
     end
 
@@ -1519,91 +1519,91 @@ graph TB
     W --> S2
     W --> S3
     W --> E1
-    W -.->|delayed| E2
-    W -.->|delayed| E3
+    W -.->|retardé| E2
+    W -.->|retardé| E3
 
     style R1 fill:#6f6
     style R2 fill:#f96
 ```
 
-## Exercises
+## Exercices
 
-### Exercise 1: Experience Eventual Consistency
+### Exercice 1 : Expérimenter la Cohérence Événementielle
 
-1. Start the cluster
-2. Write a value to the leader
-3. **Immediately** read from a follower (within 100ms)
-4. What do you see? Is it the new value or old?
+1. Démarrer le cluster
+2. Écrire une valeur au leader
+3. **Immédiatement** lire depuis un suiveur (dans les 100ms)
+4. Que voyez-vous ? Est-ce la nouvelle valeur ou l'ancienne ?
 
-### Exercise 2: Compare Consistency Levels
+### Exercice 2 : Comparer les Niveaux de Cohérence
 
-Write a script that:
-1. Sets a key to a new value
-2. Immediately reads it with `consistency=eventual`
-3. Immediately reads it with `consistency=strong`
-4. Compare the results
+Écrivez un script qui :
+1. Définit une clé à une nouvelle valeur
+2. Lit immédiatement avec `consistency=eventual`
+3. Lit immédiatement avec `consistency=strong`
+4. Compare les résultats
 
-### Exercise 3: Adjust Quorum for Different Use Cases
+### Exercice 3 : Ajuster le Quorum pour Différents Cas d'Usage
 
-For each scenario, what quorum settings would you choose?
+Pour chaque scénario, quels paramètres de quorum choisiriez-vous ?
 
-| Scenario | W (Write) | R (Read) | R + W | Consistency | Why? |
-|----------|-----------|----------|-------|-------------|-------|
-| Bank balance transfer | ? | ? | ? | ? | |
-| Social media like | ? | ? | ? | ? | |
-| Shopping cart | ? | ? | ? | ? | |
-| User profile view | ? | ? | ? | ? | |
+| Scénario | W (Écriture) | R (Lecture) | R + W | Cohérence | Pourquoi ? |
+|----------|----------------|---------------|---------|-------------|------------|
+| Transfert de solde bancaire | ? | ? | ? | ? | |
+| J'aime sur les médias sociaux | ? | ? | ? | ? | |
+| Panier d'achat | ? | ? | ? | ? | |
+| Vue du profil utilisateur | ? | ? | ? | ? | |
 
-### Exercise 4: Implement Read Repair
+### Exercice 4 : Implémenter la Réparation de Lecture
 
-When a stale read is detected, update the stale node with the latest value. Hint: In the strong consistency read, if you find a newer value on one node, send it to nodes with older values.
+Lorsqu'une lecture périmée est détectée, mettre à jour le nœud périmé avec la valeur la plus récente. Indice : Dans la lecture forte, si vous trouvez une valeur plus récente sur un nœud, envoyez-la aux nœuds avec des valeurs plus anciennes.
 
-## Summary
+## Résumé
 
-### Key Takeaways
+### Points Clés à Retenir
 
-1. **Consistency is a spectrum** from strong to eventual
-2. **Strong consistency** = always see latest data, but slower
-3. **Eventual consistency** = fast reads, but might see stale data
-4. **Quorum configuration** (W + R) controls consistency level:
-   - `R + W > N` → Strong consistency
-   - `R + W ≤ N` → Eventual consistency
-5. **Trade-off:** You can't have both strong consistency AND high availability (CAP theorem)
+1. **La cohérence est un spectre** de la forte à l'événementielle
+2. **Cohérence forte** = toujours voir les données les plus récentes, mais plus lent
+3. **Cohérence événementielle** = lectures rapides, mais peut voir des données périmées
+4. **Configuration du quorum** (W + R) contrôle le niveau de cohérence :
+   - `R + W > N` → Cohérence forte
+   - `R + W ≤ N` → Cohérence événementielle
+5. **Compromis :** Vous ne pouvez pas avoir à la fois la cohérence forte ET la haute disponibilité (théorème CAP)
 
-### Consistency Decision Tree
+### Arbre de Décision de Cohérence
 
 ```
-Need to read latest data immediately?
-├─ Yes → Use strong consistency (R + W > N)
-│  └─ Accept slower performance
-└─ No → Use eventual consistency (R + W ≤ N)
-   └─ Get faster reads, accept some staleness
+Besoin de lire les données les plus récentes immédiatement ?
+├─ Oui → Utiliser la cohérence forte (R + W > N)
+│  └─ Accepter des performances plus lentes
+└─ Non → Utiliser la cohérence événementielle (R + W ≤ N)
+   └─ Obtenir des lectures plus rapides, accepter un certain péremé
 ```
 
-### Real-World Examples
+### Exemples du Monde Réel
 
-| System | Default Consistency | Configurable? |
-|--------|---------------------|---------------|
-| **DynamoDB** | Eventually consistent | Yes (ConsistentRead parameter) |
-| **Cassandra** | Eventually consistent | Yes (CONSISTENCY level) |
-| **MongoDB** | Strong (w:majority) | Yes (writeConcern, readConcern) |
-| **CouchDB** | Eventually consistent | Yes (r, w parameters) |
-| **etcd** | Strong | No (always strong) |
+| Système | Cohérence par Défaut | Configurable ? |
+|--------|------------------------|----------------|
+| **DynamoDB** | Cohérence événementielle | Oui (paramètre ConsistentRead) |
+| **Cassandra** | Cohérence événementielle | Oui (niveau CONSISTENCY) |
+| **MongoDB** | Forte (w:majority) | Oui (writeConcern, readConcern) |
+| **CouchDB** | Cohérence événementielle | Oui (paramètres r, w) |
+| **etcd** | Forte | Non (toujours forte) |
 
-### Check Your Understanding
+### Vérifiez Votre Compréhension
 
-- [ ] What's the difference between strong and eventual consistency?
-- [ ] How does quorum configuration (R, W) affect consistency?
-- [ ] When would you choose eventual consistency over strong?
-- [ ] What does `R + W > N` guarantee?
-- [ ] Why can't we have both strong consistency and high availability during partitions?
+- [ ] Quelle est la différence entre la cohérence forte et événementielle ?
+- [ ] Comment la configuration du quorum (R, W) affecte-t-elle la cohérence ?
+- [ ] Quand choisiriez-vous la cohérence événementielle plutôt que forte ?
+- [ ] Que garantit `R + W > N` ?
+- [ ] Pourquoi ne pouvons-nous pas avoir à la fois la cohérence forte et la haute disponibilité pendant les partitions ?
 
-## 🧠 Chapter Quiz
+## 🧠 Quiz du Chapitre
 
-Test your mastery of these concepts! These questions will challenge your understanding and reveal any gaps in your knowledge.
+Testez votre maîtrise de ces concepts ! Ces questions mettront au défi votre compréhension et révéleront toute lacune dans vos connaissances.
 
 {{#quiz ../../quizzes/data-store-consistency.toml}}
 
-## What's Next
+## Suite
 
-We've built a replicated store with configurable consistency. Now let's add real-time communication: [WebSockets](../real-time/08-websockets.md) (Session 6)
+Nous avons construit un magasin répliqué avec cohérence configurable. Ajoutons maintenant la communication en temps réel : [WebSockets](../real-time/08-websockets.md) (Session 6)

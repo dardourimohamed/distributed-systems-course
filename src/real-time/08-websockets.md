@@ -1,32 +1,32 @@
 # WebSockets
 
-> **Session 6, Part 1** - 20 minutes
+> **Session 6, Partie 1** - 20 minutes
 
-## Learning Objectives
+## Objectifs d'apprentissage
 
-- [ ] Understand the WebSocket protocol and its advantages over HTTP
-- [ ] Learn the WebSocket connection lifecycle
-- [ ] Implement WebSocket servers and clients in TypeScript and Python
-- [ ] Handle connection management and error scenarios
+- [ ] Comprendre le protocole WebSocket et ses avantages par rapport à HTTP
+- [ ] Apprendre le cycle de vie d'une connexion WebSocket
+- [ ] Implémenter des serveurs et clients WebSocket en TypeScript et Python
+- [ ] Gérer la gestion des connexions et les scénarios d'erreur
 
 ## Introduction
 
-In previous sessions, we built systems using HTTP—a **request-response** protocol. The client asks, the server answers. But what if we need **real-time, bidirectional** communication?
+Dans les sessions précédentes, nous avons construit des systèmes utilisant HTTP - un protocole **requête-réponse**. Le client demande, le serveur répond. Mais que se passe-t-il si nous avons besoin d'une communication **en temps réel, bidirectionnelle** ?
 
-Enter **WebSockets**: a protocol that enables full-duplex communication over a single TCP connection.
+Voici les **WebSockets** : un protocole qui permet la communication full-duplex sur une seule connexion TCP.
 
 ```mermaid
 sequenceDiagram
     participant Client
     participant Server
 
-    Note over Client,Server: HTTP Request-Response (Traditional)
+    Note over Client,Server: HTTP Requête-Réponse (Traditionnel)
     Client->>Server: GET /data
     Server-->>Client: Response
     Client->>Server: GET /data
     Server-->>Client: Response
 
-    Note over Client,Server: WebSocket (Real-Time)
+    Note over Client,Server: WebSocket (Temps Réel)
     Client->>Server: HTTP Upgrade Request
     Server-->>Client: 101 Switching Protocols
     Client->>Server: Message 1
@@ -40,43 +40,43 @@ sequenceDiagram
 
 | Aspect | HTTP | WebSocket |
 |--------|------|-----------|
-| **Communication** | Half-duplex (request-response) | Full-duplex (bidirectional) |
-| **Connection** | New connection per request | Persistent connection |
-| **Latency** | Higher (HTTP overhead) | Lower (frames, not packets) |
-| **State** | Stateless | Stateful connection |
-| **Server Push** | Requires polling/SSE | Native push support |
+| **Communication** | Half-duplex (requête-réponse) | Full-duplex (bidirectionnelle) |
+| **Connexion** | Nouvelle connexion par requête | Connexion persistante |
+| **Latence** | Plus élevée (surcharge HTTP) | Plus faible (trames, non paquets) |
+| **État** | Sans état (stateless) | Connexion avec état (stateful) |
+| **Push serveur** | Nécessite polling/SSE | Support natif du push |
 
-### When to Use WebSockets
+### Quand utiliser les WebSockets
 
-**Great for:**
-- Chat applications
-- Real-time collaboration (editing, gaming)
-- Live dashboards and monitoring
-- Multiplayer games
+**Idéal pour :**
+- Les applications de chat
+- La collaboration en temps réel (édition, jeux)
+- Les tableaux de bord et monitoring en direct
+- Les jeux multijoueurs
 
-**Not ideal for:**
-- Simple CRUD operations (use REST)
-- One-time data fetching
-- Stateless resource access
+**Pas idéal pour :**
+- Les opérations CRUD simples (utiliser REST)
+- La récupération de données unique
+- L'accès aux ressources sans état
 
-## The WebSocket Protocol
+## Le protocole WebSocket
 
-### Connection Handshake
+### Poignée de main (Handshake)
 
-WebSockets start as HTTP, then **upgrade** to the WebSocket protocol:
+Les WebSockets commencent par HTTP, puis effectuent une **mise à niveau** (upgrade) vers le protocole WebSocket :
 
 ```mermaid
 stateDiagram-v2
-    [*] --> HTTP: Client sends HTTP request
-    HTTP --> Handshake: Server receives
+    [*] --> HTTP: Client envoie requête HTTP
+    HTTP --> Handshake: Serveur reçoit
     Handshake --> WebSocket: 101 Switching Protocols
-    WebSocket --> Connected: Full-duplex established
-    Connected --> Messaging: Send/receive frames
-    Messaging --> Closing: Close frame sent
-    Closing --> [*]: Connection terminated
+    WebSocket --> Connected: Full-duplex établi
+    Connected --> Messaging: Envoyer/recevoir trames
+    Messaging --> Closing: Trame de fermeture envoyée
+    Closing --> [*]: Connexion terminée
 ```
 
-**HTTP Request (Upgrade):**
+**Requête HTTP (mise à niveau) :**
 ```http
 GET /chat HTTP/1.1
 Host: server.example.com
@@ -86,7 +86,7 @@ Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
 Sec-WebSocket-Version: 13
 ```
 
-**HTTP Response (Accept):**
+**Réponse HTTP (acceptation) :**
 ```http
 HTTP/1.1 101 Switching Protocols
 Upgrade: websocket
@@ -94,9 +94,9 @@ Connection: Upgrade
 Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
 ```
 
-### Frame Structure
+### Structure des trames
 
-WebSocket messages are sent as **frames**, not HTTP packets:
+Les messages WebSocket sont envoyés sous forme de **trames**, non de paquets HTTP :
 
 ```
 +--------+--------+--------+--------+     +--------+
@@ -104,47 +104,47 @@ WebSocket messages are sent as **frames**, not HTTP packets:
 | 1 bit  | 3 bits | 4 bits | 1 bit  |     |        |
 +--------+--------+--------+--------+     +--------+
 
-Common Opcodes:
-- 0x1: Text frame
-- 0x2: Binary frame
-- 0x8: Close connection
+Opcodes courants :
+- 0x1: Trame de texte
+- 0x2: Trame binaire
+- 0x8: Fermer la connexion
 - 0x9: Ping
 - 0xA: Pong
 ```
 
-## WebSocket Lifecycle
+## Cycle de vie WebSocket
 
 ```mermaid
 stateDiagram-v2
     [*] --> Connecting: ws://localhost:8080
-    Connecting --> Open: Handshake complete (101)
-    Open --> Message: Send/Receive data
-    Message --> Open: Continue
-    Open --> Closing: Normal close or error
-    Closing --> Closed: TCP connection ends
+    Connecting --> Open: Handshake terminé (101)
+    Open --> Message: Envoyer/Recevoir des données
+    Message --> Open: Continuer
+    Open --> Closing: Fermeture normale ou erreur
+    Closing --> Closed: Connexion TCP terminée
     Closed --> [*]
 
     note right of Connecting
-        Client sends HTTP Upgrade
-        Server responds with 101
+        Le client envoie HTTP Upgrade
+        Le serveur répond avec 101
     end note
 
     note right of Message
-        Full-duplex messaging
-        No overhead per message
+        Messagerie full-duplex
+        Aucune surcharge par message
     end note
 
     note right of Closing
-        Close frame exchange
-        Graceful shutdown
+        Échange de trames de fermeture
+        Arrêt gracieux
     end note
 ```
 
-## Implementation: TypeScript
+## Implémentation : TypeScript
 
-We'll use the **`ws`** library—the de facto standard for WebSockets in Node.js.
+Nous utiliserons la bibliothèque **`ws`** - le standard de facto pour WebSockets dans Node.js.
 
-### Server Implementation
+### Implémentation du serveur
 
 ```typescript
 // examples/03-chat/ts/ws-server.ts
@@ -166,7 +166,7 @@ console.log('WebSocket server running on ws://localhost:8080');
 wss.on('connection', (ws: WebSocket) => {
   console.log('New client connected');
 
-  // Welcome message
+  // Message de bienvenue
   ws.send(JSON.stringify({
     type: 'message',
     username: 'System',
@@ -174,17 +174,17 @@ wss.on('connection', (ws: WebSocket) => {
     timestamp: Date.now()
   } as ChatMessage));
 
-  // Handle incoming messages
+  // Gérer les messages entrants
   ws.on('message', (data: Buffer) => {
     try {
       const message: ChatMessage = JSON.parse(data.toString());
 
       if (message.type === 'join') {
-        // Register username
+        // Enregistrer le nom d'utilisateur
         clients.set(ws, message.username);
         console.log(`${message.username} joined`);
 
-        // Broadcast to all clients
+        // Diffuser à tous les clients
         broadcast({
           type: 'message',
           username: 'System',
@@ -195,7 +195,7 @@ wss.on('connection', (ws: WebSocket) => {
         const username = clients.get(ws) || 'Anonymous';
         console.log(`${username}: ${message.content}`);
 
-        // Broadcast the message
+        // Diffuser le message
         broadcast({
           type: 'message',
           username,
@@ -208,7 +208,7 @@ wss.on('connection', (ws: WebSocket) => {
     }
   });
 
-  // Handle disconnection
+  // Gérer la déconnexion
   ws.on('close', () => {
     const username = clients.get(ws);
     if (username) {
@@ -224,7 +224,7 @@ wss.on('connection', (ws: WebSocket) => {
     }
   });
 
-  // Handle errors
+  // Gérer les erreurs
   ws.on('error', (error) => {
     console.error('WebSocket error:', error);
   });
@@ -240,7 +240,7 @@ function broadcast(message: ChatMessage): void {
   });
 }
 
-// Heartbeat to detect stale connections
+// Heartbeat pour détecter les connexions obsolètes
 const interval = setInterval(() => {
   wss.clients.forEach((ws) => {
     if (ws.isAlive === false) {
@@ -257,7 +257,7 @@ wss.on('close', () => {
 });
 ```
 
-### Client Implementation
+### Implémentation du client
 
 ```typescript
 // examples/03-chat/ts/ws-client.ts
@@ -288,7 +288,7 @@ class ChatClient {
       console.log('Connected to chat server');
       this.reconnectAttempts = 0;
 
-      // Identify ourselves
+      // Nous identifier
       this.send({
         type: 'join',
         username: this.username,
@@ -305,7 +305,7 @@ class ChatClient {
     ws.on('close', () => {
       console.log('Disconnected from server');
 
-      // Attempt reconnection
+      // Tenter la reconnexion
       if (this.reconnectAttempts < this.maxReconnectAttempts) {
         this.reconnectAttempts++;
         const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
@@ -322,7 +322,7 @@ class ChatClient {
       console.error('WebSocket error:', error.message);
     });
 
-    // Respond to pings
+    // Répondre aux pings
     ws.on('ping', () => {
       ws.pong();
     });
@@ -357,14 +357,14 @@ class ChatClient {
   }
 }
 
-// CLI interface
+// Interface CLI
 const username = process.argv[2] || `User${Math.floor(Math.random() * 1000)}`;
 const client = new ChatClient('ws://localhost:8080', username);
 
 console.log(`You are logged in as: ${username}`);
 console.log('Type a message and press Enter to send. Press Ctrl+C to exit.');
 
-// Read from stdin
+// Lire depuis stdin
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', (chunk: Buffer) => {
   const text = chunk.toString().trim();
@@ -373,7 +373,7 @@ process.stdin.on('data', (chunk: Buffer) => {
   }
 });
 
-// Handle graceful shutdown
+// Gérer l'arrêt gracieux
 process.on('SIGINT', () => {
   console.log('\nShutting down...');
   client.close();
@@ -381,7 +381,7 @@ process.on('SIGINT', () => {
 });
 ```
 
-### Package Configuration
+### Configuration du package
 
 ```json
 // examples/03-chat/ts/package.json
@@ -404,11 +404,11 @@ process.on('SIGINT', () => {
 }
 ```
 
-## Implementation: Python
+## Implémentation : Python
 
-We'll use the **`websockets`** library—a fully compliant WebSocket implementation.
+Nous utiliserons la bibliothèque **`websockets`** - une implémentation WebSocket entièrement conforme.
 
-### Server Implementation
+### Implémentation du serveur
 
 ```python
 # examples/03-chat/py/ws_server.py
@@ -423,13 +423,13 @@ from websockets.server import WebSocketServerProtocol
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Track connected clients
+# Suivre les clients connectés
 clients: Set[WebSocketServerProtocol] = set()
 usernames: dict[WebSocketServerProtocol, str] = {}
 
 
 async def broadcast(message: dict) -> None:
-    """Send a message to all connected clients."""
+    """Envoyer un message à tous les clients connectés."""
     if clients:
         await asyncio.gather(
             *[client.send(json.dumps(message)) for client in clients if client.open],
@@ -438,12 +438,12 @@ async def broadcast(message: dict) -> None:
 
 
 async def handle_client(websocket: WebSocketServerProtocol) -> None:
-    """Handle a client connection."""
+    """Gérer une connexion client."""
     clients.add(websocket)
     logger.info(f"New client connected. Total clients: {len(clients)}")
 
     try:
-        # Send welcome message
+        # Envoyer un message de bienvenue
         welcome_msg = {
             "type": "message",
             "username": "System",
@@ -452,18 +452,18 @@ async def handle_client(websocket: WebSocketServerProtocol) -> None:
         }
         await websocket.send(json.dumps(welcome_msg))
 
-        # Handle messages
+        # Gérer les messages
         async for message in websocket:
             try:
                 data = json.loads(message)
 
                 if data.get("type") == "join":
-                    # Register username
+                    # Enregistrer le nom d'utilisateur
                     username = data.get("username", "Anonymous")
                     usernames[websocket] = username
                     logger.info(f"{username} joined")
 
-                    # Broadcast join notification
+                    # Diffuser la notification de rejoindre
                     await broadcast({
                         "type": "message",
                         "username": "System",
@@ -472,7 +472,7 @@ async def handle_client(websocket: WebSocketServerProtocol) -> None:
                     })
 
                 elif data.get("type") == "message":
-                    # Broadcast the message
+                    # Diffuser le message
                     username = usernames.get(websocket, "Anonymous")
                     content = data.get("content", "")
                     logger.info(f"{username}: {content}")
@@ -492,7 +492,7 @@ async def handle_client(websocket: WebSocketServerProtocol) -> None:
     except websockets.exceptions.ConnectionClosed:
         logger.info("Client disconnected unexpectedly")
     finally:
-        # Cleanup
+        # Nettoyage
         username = usernames.get(websocket)
         if username:
             del usernames[websocket]
@@ -508,7 +508,7 @@ async def handle_client(websocket: WebSocketServerProtocol) -> None:
 
 
 async def main():
-    """Start the WebSocket server."""
+    """Démarrer le serveur WebSocket."""
     async with websockets.serve(handle_client, "localhost", 8080):
         logger.info("WebSocket server running on ws://localhost:8080")
         await asyncio.Future()  # Run forever
@@ -521,7 +521,7 @@ if __name__ == "__main__":
         logger.info("Server stopped")
 ```
 
-### Client Implementation
+### Implémentation du client
 
 ```python
 # examples/03-chat/py/ws_client.py
@@ -542,7 +542,7 @@ class ChatClient:
         self.max_reconnect_attempts = 5
 
     async def connect(self) -> None:
-        """Connect to the WebSocket server."""
+        """Connecter au serveur WebSocket."""
         backoff = 1
 
         while self.reconnect_attempts < self.max_reconnect_attempts:
@@ -552,7 +552,7 @@ class ChatClient:
                     self.reconnect_attempts = 0
                     print(f"Connected to {self.url}")
 
-                    # Identify ourselves
+                    # Nous identifier
                     await self.send({
                         "type": "join",
                         "username": self.username,
@@ -560,13 +560,13 @@ class ChatClient:
                         "timestamp": datetime.now().timestamp()
                     })
 
-                    # Start receiving messages
+                    # Commencer à recevoir des messages
                     receive_task = asyncio.create_task(self.receive_messages())
 
-                    # Wait for connection to close
+                    # Attendre la fermeture de la connexion
                     await ws.wait_closed()
 
-                    # Cancel receive task
+                    # Annuler la tâche de réception
                     receive_task.cancel()
                     try:
                         await receive_task
@@ -586,7 +586,7 @@ class ChatClient:
         print("Max reconnection attempts reached. Giving up.")
 
     async def receive_messages(self) -> None:
-        """Receive and display messages from the server."""
+        """Recevoir et afficher les messages du serveur."""
         if not self.websocket:
             return
 
@@ -600,20 +600,20 @@ class ChatClient:
             print(f"Error receiving message: {e}")
 
     async def send(self, message: dict) -> None:
-        """Send a message to the server."""
+        """Envoyer un message au serveur."""
         if self.websocket and not self.websocket.closed:
             await self.websocket.send(json.dumps(message))
         else:
             print("Cannot send message: connection not open")
 
     def display_message(self, message: dict) -> None:
-        """Display a received message."""
+        """Afficher un message reçu."""
         timestamp = datetime.fromtimestamp(message["timestamp"]).strftime("%H:%M:%S")
         print(f"[{timestamp}] {message['username']}: {message['content']}")
 
 
 async def stdin_reader(client: ChatClient):
-    """Read from stdin and send messages."""
+    """Lire depuis stdin et envoyer des messages."""
     loop = asyncio.get_event_loop()
 
     while True:
@@ -630,17 +630,17 @@ async def stdin_reader(client: ChatClient):
 
 
 async def main():
-    """Run the chat client."""
+    """Exécuter le client de chat."""
     username = sys.argv[1] if len(sys.argv) > 1 else f"User{asyncio.get_event_loop().time() % 1000:.0f}"
     client = ChatClient("ws://localhost:8080", username)
 
     print(f"You are logged in as: {username}")
     print("Type a message and press Enter to send. Press Ctrl+C to exit.")
 
-    # Run connection and stdin reader concurrently
+    # Exécuter la connexion et le lecteur stdin simultanément
     connect_task = asyncio.create_task(client.connect())
 
-    # Give connection time to establish
+    # Donner du temps à la connexion pour s'établir
     await asyncio.sleep(0.5)
 
     stdin_task = asyncio.create_task(stdin_reader(client))
@@ -661,16 +661,16 @@ if __name__ == "__main__":
         pass
 ```
 
-### Requirements
+### Configuration requise
 
 ```txt
 # examples/03-chat/py/requirements.txt
 websockets==13.1
 ```
 
-## Docker Compose Setup
+## Configuration Docker Compose
 
-### TypeScript Version
+### Version TypeScript
 
 ```yaml
 # examples/03-chat/ts/docker-compose.yml
@@ -705,7 +705,7 @@ EXPOSE 8080
 CMD ["node", "dist/ws-server.js"]
 ```
 
-### Python Version
+### Version Python
 
 ```yaml
 # examples/03-chat/py/docker-compose.yml
@@ -737,63 +737,63 @@ EXPOSE 8080
 CMD ["python", "ws_server.py"]
 ```
 
-## Running the Examples
+## Exécution des exemples
 
 ### TypeScript
 
 ```bash
-# Install dependencies
+# Installer les dépendances
 cd examples/03-chat/ts
 npm install
 
-# Start the server
+# Démarrer le serveur
 npm run server
 
-# In another terminal, start a client
+# Dans un autre terminal, démarrer un client
 npm run client Alice
 
-# In another terminal, start another client
+# Dans un autre terminal, démarrer un autre client
 npm run client Bob
 ```
 
 ### Python
 
 ```bash
-# Install dependencies
+# Installer les dépendances
 cd examples/03-chat/py
 pip install -r requirements.txt
 
-# Start the server
+# Démarrer le serveur
 python ws_server.py
 
-# In another terminal, start a client
+# Dans un autre terminal, démarrer un client
 python ws_client.py Alice
 
-# In another terminal, start another client
+# Dans un autre terminal, démarrer un autre client
 python ws_client.py Bob
 ```
 
-### With Docker
+### Avec Docker
 
 ```bash
-# Start the server
+# Démarrer le serveur
 docker-compose up -d
 
-# Check logs
+# Vérifier les logs
 docker-compose logs -f
 
-# Connect with a client (run from host)
-npm run client Alice  # or python ws_client.py Alice
+# Se connecter avec un client (exécuter depuis l'hôte)
+npm run client Alice  # ou python ws_client.py Alice
 ```
 
-## Connection Management Best Practices
+## Bonnes pratiques de gestion des connexions
 
 ### 1. Heartbeat/Ping-Pong
 
-Detect stale connections before they cause issues:
+Détecter les connexions obsolètes avant qu'elles ne causent des problèmes :
 
 ```typescript
-// Server sends ping every 30 seconds
+// Le serveur envoie un ping toutes les 30 secondes
 setInterval(() => {
   wss.clients.forEach((ws) => {
     if (ws.isAlive === false) return ws.terminate();
@@ -802,13 +802,13 @@ setInterval(() => {
   });
 }, 30000);
 
-// Client responds automatically
+// Le client répond automatiquement
 ws.on('ping', () => ws.pong());
 ```
 
-### 2. Exponential Backoff Reconnection
+### 2. Reconnexion avec backoff exponentiel
 
-Don't hammer the server when it's down:
+Ne pas surcharger le serveur lorsqu'il est en panne :
 
 ```typescript
 function reconnect(attempts: number) {
@@ -817,21 +817,21 @@ function reconnect(attempts: number) {
 }
 ```
 
-### 3. Graceful Shutdown
+### 3. Arrêt gracieux
 
 ```typescript
-// Send close frame before terminating
+// Envoyer une trame de fermeture avant de terminer
 ws.close(1000, 'Normal closure');
 
-// Wait for close frame acknowledgement
+// Attendre l'accusé de réception de la trame de fermeture
 ws.on('close', () => {
   console.log('Connection closed cleanly');
 });
 ```
 
-### 4. Message Serialization
+### 4. Sérialisation des messages
 
-Always validate incoming messages:
+Toujours valider les messages entrants :
 
 ```typescript
 function safeParse(data: string): Message | null {
@@ -845,49 +845,49 @@ function safeParse(data: string): Message | null {
 }
 ```
 
-## Common Pitfalls
+## Pièges courants
 
-| Pitfall | Symptom | Solution |
+| Piège | Symptôme | Solution |
 |---------|---------|----------|
-| Not handling reconnection | Client stops working on network blip | Implement exponential backoff reconnection |
-| Ignoring the `close` event | Memory leaks from stale clients | Always clean up on disconnect |
-| Blocking the event loop | Messages delayed | Use async/await properly, avoid CPU-heavy work |
-- Missing heartbeat | Stale connections remain | Implement ping/pong |
-- Not validating messages | Crashes on malformed data | Always try/catch JSON parsing |
+| Pas de gestion de la reconnexion | Le client cesse de fonctionner sur une coupure réseau | Implémenter la reconnexion avec backoff exponentiel |
+| Ignorer l'événement `close` | Fuites de mémoire des clients obsolètes | Toujours nettoyer à la déconnexion |
+| Blocage de la boucle d'événements | Messages retardés | Utiliser async/await correctement, éviter le travail CPU intensif |
+- Heartbeat manquant | Les connexions obsolètes restent | Implémenter ping/pong |
+- Pas de validation des messages | Plantages sur des données malformées | Toujours essayer/attraper l'analyse JSON |
 
-## Testing Your WebSocket Implementation
+## Test de votre implémentation WebSocket
 
 ```bash
-# Using websocat (like curl for WebSockets)
-# Install: cargo install websocat
+# Utiliser websocat (comme curl pour WebSockets)
+# Installation : cargo install websocat
 
-# Connect and send/receive messages
+# Connecter et envoyer/recevoir des messages
 echo '{"type":"join","username":"TestUser","content":"","timestamp":123456}' | \
   websocat ws://localhost:8080
 
-# Interactive mode
+# Mode interactif
 websocat ws://localhost:8080
 ```
 
-## Summary
+## Résumé
 
-WebSockets enable **real-time, bidirectional communication** between clients and servers:
+Les WebSockets permettent la **communication en temps réel bidirectionnelle** entre clients et serveurs :
 
-- **Protocol**: HTTP upgrade handshake → persistent TCP connection
-- **Communication**: Full-duplex messaging with minimal overhead
-- **Lifecycle**: Connecting → Open → Messaging → Closing → Closed
-- **Best practices**: Heartbeats, graceful shutdown, reconnection handling
+- **Protocole** : Poignée de main HTTP avec mise à niveau → connexion TCP persistante
+- **Communication** : Messagerie full-duplex avec une surcharge minimale
+- **Cycle de vie** : Connecting → Open → Messaging → Closing → Closed
+- **Bonnes pratiques** : Heartbeats, arrêt gracieux, gestion de la reconnexion
 
-In the next section, we'll build on this foundation to implement **pub/sub messaging** for multi-room chat systems.
+Dans la section suivante, nous développerons cette base pour implémenter la **messagerie pub/sub** pour les systèmes de chat multi-salles.
 
-## Exercises
+## Exercices
 
-### Exercise 1: Add Private Messaging
+### Exercice 1 : Ajouter la messagerie privée
 
-Extend the chat system to support private messages between users:
+Étendre le système de chat pour prendre en charge les messages privés entre utilisateurs :
 
 ```typescript
-// Message format for private messages
+// Format de message pour les messages privés
 {
   type: 'private',
   from: 'Alice',
@@ -897,17 +897,17 @@ Extend the chat system to support private messages between users:
 }
 ```
 
-**Requirements:**
-1. Add a `private` message type
-2. Route private messages only to the intended recipient
-3. Show "private message" indicator in the UI
+**Exigences :**
+1. Ajouter un type de message `private`
+2. Acheminer les messages privés uniquement au destinataire prévu
+3. Afficher un indicateur de "message privé" dans l'interface
 
-### Exercise 2: Typing Indicators
+### Exercice 2 : Indicateurs de frappe
 
-Show when a user is typing:
+Afficher quand un utilisateur est en train de taper :
 
 ```typescript
-// Typing indicator message
+// Message d'indicateur de frappe
 {
   type: 'typing',
   username: 'Alice',
@@ -916,31 +916,31 @@ Show when a user is typing:
 }
 ```
 
-**Requirements:**
-1. Send `typing.start` when user starts typing
-2. Send `typing.stop` after 2 seconds of inactivity
-3. Display "Alice is typing..." to other users
+**Exigences :**
+1. Envoyer `typing.start` lorsque l'utilisateur commence à taper
+2. Envoyer `typing.stop` après 2 secondes d'inactivité
+3. Afficher "Alice est en train de taper..." aux autres utilisateurs
 
-### Exercise 3: Connection Status
+### Exercice 3 : État de connexion
 
-Display real-time connection status to the user:
+Afficher l'état de connexion en temps réel à l'utilisateur :
 
-**Requirements:**
-1. Show: Connecting → Connected → Disconnected → Reconnecting
-2. Use visual indicators (green dot, red dot, spinner)
-3. Display ping/pong latency in milliseconds
+**Exigences :**
+1. Afficher : Connecting → Connected → Disconnected → Reconnecting
+2. Utiliser des indicateurs visuels (point vert, point rouge, spinner)
+3. Afficher la latence ping/pong en millisecondes
 
-### Exercise 4: Message History with Reconnection
+### Exercice 4 : Historique des messages avec reconnexion
 
-When a client reconnects, send them messages they missed:
+Lorsqu'un client se reconnecte, lui envoyer les messages qu'il a manqués :
 
-**Requirements:**
-1. Store last 100 messages on the server
-2. When client reconnects, send messages since their last timestamp
-3. Deduplicate messages the client already has
+**Exigences :**
+1. Stocker les 100 derniers messages sur le serveur
+2. Lors de la reconnexion du client, envoyer les messages depuis son dernier horodatage
+3. Dédupliquer les messages que le client possède déjà
 
-## 🧠 Chapter Quiz
+## 🧠 Quiz du chapitre
 
-Test your mastery of these concepts! These questions will challenge your understanding and reveal any gaps in your knowledge.
+Testez votre maîtrise de ces concepts ! Ces questions mettront au défi votre compréhension et révéleront les lacunes dans vos connaissances.
 
 {{#quiz ../../quizzes/real-time-websockets.toml}}

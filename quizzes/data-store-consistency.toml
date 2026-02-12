@@ -1,14 +1,15 @@
 [[questions]]
 type = "MultipleChoice"
-prompt.prompt = "What consistency model guarantees every read receives the most recent write?"
-prompt.distractors = ["Eventual consistency", "Causal consistency", "Linearizability"]
-answer.answer = "Linearizability"
-context = "Linearizability (strong consistency) guarantees you read the latest write. Powerful but impacts performance and availability."
+prompt.prompt = "Quel modèle de cohérence garantit que chaque lecture reçoit l'écriture la plus récente ?"
+prompt.distractors = ["Cohérence éventuelle", "Cohérence causale", "Linéarisabilité"]
+answer.answer = "Linéarisabilité"
+context = "La linéarisabilité (cohérence forte) garantit que vous lisez la dernière écriture. Puissant mais impacte les performances et la disponibilité."
 id = "a20b48a3-a7b1-47e7-9e65-baf3381aaefe"
 
 [[questions]]
 type = "ShortAnswer"
-prompt.prompt = "What consistency model means a user sees their own writes immediately, but other users might see stale data?"
-answer.answer = "read your writes"
-context = "Read-your-writes is a session guarantee—users see their own updates immediately, even if replication hasn't finished."
+prompt.prompt = "Quel modèle de cohérence signifie qu'un utilisateur voit ses propres écritures immédiatement, mais d'autres utilisateurs peuvent voir des données obsolètes ?"
+answer.answer = "lire vos écritures"
+answer.alternatives = ["read your writes", "lire ses écritures"]
+context = "Read-your-writes est une garantie de session — les utilisateurs voient leurs propres mises à jour immédiatement, même si la réplication n'est pas terminée."
 id = "47521169-2a76-4184-a4fc-9165a35cbc2d"

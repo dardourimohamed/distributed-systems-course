@@ -1,14 +1,15 @@
 [[questions]]
 type = "MultipleChoice"
-prompt.prompt = "What should be stored in the Raft log vs the state machine?"
-prompt.distractors = ["Everything in log", "Operations in log, data in state machine", "Data in log, operations in state machine"]
-answer.answer = "Operations in log, data in state machine"
-context = "The log stores operations (PUT, DELETE). The state machine holds the actual data. Log provides agreement on operation sequence."
+prompt.prompt = "Que doit-on stocker dans le journal Raft vs la machine à états ?"
+prompt.distractors = ["Tout dans le journal", "Opérations dans le journal, données dans la machine à états", "Données dans le journal, opérations dans la machine à états"]
+answer.answer = "Opérations dans le journal, données dans la machine à états"
+context = "Le journal stocke les opérations (PUT, DELETE). La machine à états contient les données réelles. Le journal fournit l'accord sur la séquence des opérations."
 id = "9cf1e20d-fe29-4174-b0d3-8d366fe8586c"
 
 [[questions]]
 type = "ShortAnswer"
-prompt.prompt = "What's the purpose of snapshots in Raft?"
-answer.answer = "log compaction"
-context = "Snapshots capture state machine state at a point in time, allowing log entries before that point to be discarded. Prevents unbounded log growth."
+prompt.prompt = "Quel est le but des instantanés dans Raft ?"
+answer.answer = "compaction du journal"
+answer.alternatives = ["log compaction", "compactage du journal", "snapshots"]
+context = "Les instantanés capturent l'état de la machine à états à un moment donné, permettant aux entrées de journal avant ce point d'être supprimées. Empêche la croissance non bornée du journal."
 id = "386465ab-4359-4b1c-8383-8433eb2d63d3"
