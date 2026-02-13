@@ -22,7 +22,7 @@ cache-answers = true
 [output.html]
 default-theme = "light"
 preferred-dark-theme = "navy"
-additional-js = ["book.js"]
+additional-js = ["mermaid-init.js"]
 
 [output.html.search]
 enable = true
