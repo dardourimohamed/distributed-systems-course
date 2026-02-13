@@ -1,5 +1,6 @@
 // Mermaid initialization for mdBook
 // This script loads mermaid.js and renders all mermaid diagrams
+// Version: 2.0 - Fixed hljs.highlightElement error
 
 (function() {
     'use strict';
