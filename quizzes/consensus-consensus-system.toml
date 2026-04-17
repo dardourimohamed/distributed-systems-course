@@ -1,15 +1,47 @@
 [[questions]]
 type = "MultipleChoice"
-prompt.prompt = "Que doit-on stocker dans le journal Raft vs la machine à états ?"
-prompt.distractors = ["Tout dans le journal", "Opérations dans le journal, données dans la machine à états", "Données dans le journal, opérations dans la machine à états"]
-answer.answer = "Opérations dans le journal, données dans la machine à états"
-context = "Le journal stocke les opérations (PUT, DELETE). La machine à états contient les données réelles. Le journal fournit l'accord sur la séquence des opérations."
-id = "9cf1e20d-fe29-4174-b0d3-8d366fe8586c"
+prompt.prompt = "Dans un cluster Raft de 5 nœuds, le chef tombe en panne. Comment les suiveurs détectent-ils la panne ?"
+prompt.distractors = ["Le chef envoie un message d'adieu avant de s'éteindre", "Les clients les informent que le chef ne répond plus", "Un autre nœud diffuse un signal de panne"]
+answer.answer = "Leurs délais d'attente expirent — ils ne reçoivent plus de battements de cœur"
+context = "Les suiveurs attendent des battements de cœur réguliers du chef. Quand le délai d'attente expire sans battement, ils savent que le chef est injoignable et déclenchent une élection."
+id = "c4d5e6f7-0001-4000-8000-000000000001"
+
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "Un cluster de 5 nœuds subit une partition réseau : 3 nœuds d'un côté, 2 de l'autre. Que peut faire le côté minorité (2 nœuds) ?"
+prompt.distractors = ["Élire un nouveau chef et continuer normalement", "Valider des entrées avec une majorité partielle", "Se synchroniser avec le côté majorité à travers la partition"]
+answer.answer = "Rien — il ne peut pas obtenir la majorité pour élire un chef ou valider des entrées"
+context = "Avec 2 nœuds sur 5, impossible d'obtenir la majorité (3/5 nécessaire). Les élections échouent et aucune entrée ne peut être validée. C'est la sécurité de Raft contre le split-brain."
+id = "c4d5e6f7-0002-4000-8000-000000000002"
+
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "L'ancien chef (mandat 3) redémarre et envoie un AppendEntries au nouveau chef (mandat 4). Que se passe-t-il ?"
+prompt.distractors = ["L'ancien chef reprend son rôle de chef car il était chef avant", "Les deux nœuds lancent une nouvelle élection pour départager", "Le nouveau chef ignore le message car il est occupé"]
+answer.answer = "L'ancien chef découvre le mandat 4, redescend au rang de suiveur et se synchronise"
+context = "Les mandats ne font qu'augmenter. Dès qu'un nœud découvre un mandat supérieur au sien, il doit redevenir suiveur. L'ancien chef se soumet automatiquement."
+id = "c4d5e6f7-0003-4000-8000-000000000003"
+
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "Parmi ces situations, laquelle ne nécessite PAS de consensus ?"
+prompt.distractors = ["Un verrou distribué où un seul nœud doit détenir le verrou", "Une base de données distribuée où tous les nœuds doivent être d'accord", "L'élection d'un leader unique dans un cluster"]
+answer.answer = "Un cache CDN où la cohérence éventuelle suffit"
+context = "Un cache CDN n'exige pas que tous les nœuds voient exactement la même donnée au même instant. La cohérence éventuelle suffit — le consensus (plus lent, plus complexe) n'est pas nécessaire."
+id = "c4d5e6f7-0004-4000-8000-000000000004"
 
 [[questions]]
 type = "ShortAnswer"
-prompt.prompt = "Quel est le but des instantanés dans Raft ?"
-answer.answer = "compaction du journal"
-answer.alternatives = ["log compaction", "compactage du journal", "snapshots"]
-context = "Les instantanés capturent l'état de la machine à états à un moment donné, permettant aux entrées de journal avant ce point d'être supprimées. Empêche la croissance non bornée du journal."
-id = "386465ab-4359-4b1c-8383-8433eb2d63d3"
+prompt.prompt = "Un cluster de 5 nœuds se coupe en deux groupes : A, B, C d'un côté (le chef A est dans ce groupe) et D, E de l'autre. Le côté de A peut-il valider de nouvelles entrées ? Pourquoi ?"
+answer.answer = "Oui, car A a la majorité (3 nœuds sur 5)"
+answer.alternatives = ["Oui, 3 sur 5 c'est la majorité", "Oui car le groupe ABC a 3 nœuds, soit la majorité de 5", "Oui — 3 nœuds forment la majorité du cluster de 5", "Oui, A a 3/5 donc la majorité"]
+context = "Avec 5 nœuds, la majorité est 3. Le côté A-B-C a 3 nœuds, donc le chef A peut continuer à valider des entrées. Le côté D-E (2 nœuds) ne peut rien faire."
+id = "c4d5e6f7-0005-4000-8000-000000000005"
+
+[[questions]]
+type = "ShortAnswer"
+prompt.prompt = "Pourquoi Raft utilise-t-il un seul chef au lieu de laisser tous les nœuds proposer des commandes simultanément ?"
+answer.answer = "pour éviter les conflits et garantir que toutes les décisions passent par un nœud unique qui ordonne les opérations"
+answer.alternatives = ["éviter les conflits entre nœuds", "garantir un ordre unique des opérations", "un seul chef = pas de conflits sur l'ordre des commandes", "simplifier la coordination en centralisant les décisions", "pour qu'un seul nœud décide de l'ordre"]
+context = "Avec un seul chef, il n'y a pas de conflit sur l'ordre des opérations. Si tous les nœuds pouvaient proposer des commandes, il faudrait résoudre des conflits complexes. Le chef unique simplifie le problème."
+id = "c4d5e6f7-0006-4000-8000-000000000006"

@@ -9,8 +9,8 @@
 event_loop:
   prompt_file: "PROMPT.md"
   completion_promise: "DOCS_COMPLETE"
-  max_iterations: 30
-  max_runtime_seconds: 7200
+  max_iterations: 10000
+  max_runtime_seconds: 259200
 
 cli:
   backend: "claude"
@@ -67,4 +67,3 @@ hats:
       - [ ] No broken links
       - [ ] Consistent terminology
       - [ ] Grammar and spelling
-

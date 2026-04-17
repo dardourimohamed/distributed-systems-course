@@ -1,15 +1,47 @@
 [[questions]]
 type = "MultipleChoice"
-prompt.prompt = "Qu'est-ce qui déclenche un suiveur à commencer une élection ?"
-prompt.distractors = ["Recevoir une requête client", "Le délai d'élection expire", "Le journal grandit trop"]
-answer.answer = "Le délai d'élection expire"
-context = "Lorsqu'un suiveur ne reçoit pas de battements de cœur avant le délai, il suppose que le leader a échoué et commence une nouvelle élection."
-id = "a1c4817a-dfef-44e0-8543-657db60f45f1"
+prompt.prompt = "Qu'est-ce qui pousse un suiveur à devenir candidat et lancer une élection ?"
+prompt.distractors = ["Il reçoit une requête d'un client", "Son journal devient trop grand", "Un autre candidat lui demande de se présenter"]
+answer.answer = "Son délai d'attente expire — il n'a pas reçu de battement de cœur du chef"
+context = "Un suiveur attend des battements de cœur réguliers du chef. Si aucun ne arrive avant la fin du délai, le suiveur suppose que le chef est en panne et se déclare candidat."
+id = "b2c3d4e5-0001-4000-8000-000000000001"
+
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "Que se passe-t-il quand un nœud découvre un numéro de mandat supérieur au sien ?"
+prompt.distractors = ["Il ignore le message et continue", "Il lance immédiatement une nouvelle élection", "Il redémarre complètement"]
+answer.answer = "Il redescend immédiatement au rang de suiveur"
+context = "Les mandats ne font qu'augmenter. Si un nœud (même un chef) découvre un mandat supérieur, il doit redevenir suiveur — c'est ce qui garantit qu'un ancien chef ne peut pas donner d'ordres obsolètes."
+id = "b2c3d4e5-0002-4000-8000-000000000002"
+
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "Qu'est-ce qu'un vote partagé (split vote) ?"
+prompt.distractors = ["Un nœud vote pour deux candidats en même temps", "Un candidat refuse de voter pour lui-même", "Le chef perd son élection et doit redevenir candidat"]
+answer.answer = "Plusieurs candidats se présentent, mais aucun n'obtient la majorité des votes"
+context = "Quand deux suiveurs deviennent candidats en même temps, les votes se divisent et personne n'atteint la majorité. Les délais aléatoires rendent cette situation rare."
+id = "b2c3d4e5-0003-4000-8000-000000000003"
+
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "Parmi ces trois règles de vote, laquelle garantit qu'un seul chef peut être élu par mandat ?"
+prompt.distractors = ["Le mandat du candidat doit être inférieur au mien", "Le journal du candidat doit être à jour", "Le candidat doit avoir envoyé un battement de cœur"]
+answer.answer = "Chaque nœud ne peut voter qu'une seule fois par mandat"
+context = "La règle « un seul vote par nœud et par mandat » empêche deux candidats d'obtenir la majorité dans le même mandat. C'est la garantie fondamentale qu'il n'y a qu'un seul chef."
+id = "b2c3d4e5-0004-4000-8000-000000000004"
 
 [[questions]]
 type = "ShortAnswer"
-prompt.prompt = "Qu'est-ce qu'un vote partagé dans les élections Raft ?"
-answer.answer = "égalité"
-answer.alternatives = ["tie", "vote partagé", "égalité parfaite"]
-context = "Vote partagé = égalité, pas de majorité gagne. Les délais randomisés rendent les votes partagés rares — les suiveurs expirent à des moments différents, donc un candidat gagne généralement."
-id = "0dab64c6-86d6-419a-ac5d-2dedd8f4220a"
+prompt.prompt = "Nœud A (délai 150 ms), B (délai 280 ms), C (délai 200 ms). Qui devient candidat en premier et pourquoi ?"
+answer.answer = "A, car son délai de 150 ms est le plus court"
+answer.alternatives = ["A car 150ms est le plus court", "le Nœud A (150 ms est le délai le plus court)", "A parce qu'il a le timeout le plus court", "Nœud A (150ms le plus rapide)"]
+context = "Avec des délais aléatoires, le nœud dont le délai expire en premier devient candidat. Ici, A atteint 150 ms avant B (280 ms) et C (200 ms). Il demande des votes et les autres réinitialisent leur délai."
+id = "b2c3d4e5-0005-4000-8000-000000000005"
+
+[[questions]]
+type = "ShortAnswer"
+prompt.prompt = "Pourquoi les délais d'attente des élections sont-ils aléatoires dans Raft ?"
+answer.answer = "pour éviter les votes partagés (split votes) en empêchant que plusieurs candidats se présentent en même temps"
+answer.alternatives = ["éviter les votes partagés", "empêcher les split votes", "pour que les nœuds ne deviennent pas candidats simultanément", "réduire la probabilité de vote partagé", "éviter que plusieurs suiveurs deviennent candidats en même temps"]
+context = "Si tous les nœuds avaient le même délai, ils deviendraient candidats simultanément et personne n'obtiendrait la majorité. Les délais aléatoires décalent les candidatures dans le temps."
+id = "b2c3d4e5-0006-4000-8000-000000000006"

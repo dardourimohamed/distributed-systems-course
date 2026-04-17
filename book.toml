@@ -16,13 +16,15 @@ use-default-preprocessors = true
 command = "mdbook-mermaid"
 
 [preprocessor.quiz]
+command = "python3 quiz-preprocessor.py"
 fullscreen = true
 cache-answers = true
 
 [output.html]
 default-theme = "light"
 preferred-dark-theme = "navy"
-additional-js = ["mermaid-init.js"]
+additional-js = ["src/mermaid-init.js", "src/quiz/quiz-embed.iife.js"]
+additional-css = ["src/quiz/style.css"]
 
 [output.html.search]
 enable = true

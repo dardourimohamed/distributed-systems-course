@@ -1,15 +1,47 @@
 [[questions]]
 type = "MultipleChoice"
-prompt.prompt = "Que signifient la sécurité (safety) et la vivacité (liveness) dans le consensus ?"
-prompt.distractors = ["Vitesse et fiabilité", "Tous s'accordent et décident finalement", "Cohérence et disponibilité"]
-answer.answer = "Tous s'accordent et décident finalement"
-context = "Sécurité = tous les nœuds corrects s'accordent sur la même valeur. Vivacité = tous les nœuds corrects décident finalement (pas bloqués pour toujours)."
-id = "413a1325-d83f-4531-9559-f78bbb60cff1"
+prompt.prompt = "Dans l'histoire de la cuisine, quel problème l'arrivée d'un chef principal résout-elle ?"
+prompt.distractors = ["Les plats sont préparés plus vite", "Chaque chef peut choisir ses propres recettes", "Les serveurs ne transmettent plus les commandes"]
+answer.answer = "Tous les chefs s'accordent sur une même décision pour chaque table"
+context = "Sans chef principal, chaque chef reçoit des commandes différentes et prépare des plats en désaccord. Le chef principal assure la coordination — exactement comme le consensus dans un système distribué."
+id = "a1b2c3d4-0001-4000-8000-000000000001"
+
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "Quelle propriété du consensus correspond à : « Une fois qu'un nœud a pris sa décision, elle est définitive » ?"
+prompt.distractors = ["Accord", "Validité", "Terminaison"]
+answer.answer = "Intégrité"
+context = "L'intégrité garantit qu'un nœud ne peut pas changer d'avis après avoir décidé. C'est comme signer un contrat : une fois signé, impossible d'annuler sa signature."
+id = "a1b2c3d4-0002-4000-8000-000000000002"
+
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "Qu'est-ce qu'un « split-brain » dans un système distribué ?"
+prompt.distractors = ["Un nœud qui redémarre après une panne", "Un message qui arrive en double", "Un algorithme de consensus"]
+answer.answer = "Les nœuds ont des visions différentes de l'état du système"
+context = "Le split-brain (cerveau divisé) se produit quand les nœuds ne se coordonnent pas : chacun décide de son côté, comme des chefs qui prépareraient des plats différents pour la même table."
+id = "a1b2c3d4-0003-4000-8000-000000000003"
+
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "En quoi Raft décompose-t-il le problème du consensus ?"
+prompt.distractors = ["En trois phases : proposition, vote, exécution", "En une seule phase où tous les nœuds votent simultanément", "En quatre phases correspondant aux quatre propriétés du consensus"]
+answer.answer = "En deux phases : élection d'un chef puis réplication des décisions"
+context = "Raft sépare le consensus en deux étapes claires — d'abord choisir un leader (élection), puis le leader fait appliquer ses décisions par les autres (réplication). Comme dans la cuisine : on nomme un chef principal, puis il distribue les tâches."
+id = "a1b2c3d4-0004-4000-8000-000000000004"
 
 [[questions]]
 type = "ShortAnswer"
-prompt.prompt = "De quoi traite le résultat d'impossibilité FLP ?"
-answer.answer = "impossible dans les systèmes asynchrones"
-answer.alternatives = ["impossible en asynchrone", "FLP", "impossibilité FLP"]
-context = "FLP prouve que le consensus est impossible dans les systèmes asynchrones avec même un seul processus défectueux. Les systèmes réels évitent cela avec des délais d'attente et des détecteurs de panne."
-id = "5efe27db-f4d8-447c-9366-90b40bb0eccc"
+prompt.prompt = "Quelles deux techniques les systèmes réels utilisent-ils pour contourner le résultat d'impossibilité FLP ?"
+answer.answer = "des délais d'attente (timeouts) et de l'aléatoire (randomisation)"
+answer.alternatives = ["timeouts et aléatoire", "délais d'attente et aléatoire", "timeouts et randomisation", "délais et aléatoire", "des timeouts et du hasard"]
+context = "FLP dit que le consensus déterministe est impossible en réseau asynchrone. En pratique, les timeouts permettent de ne pas attendre indéfiniment, et l'aléatoire casse les situations de blocage."
+id = "a1b2c3d4-0005-4000-8000-000000000005"
+
+[[questions]]
+type = "ShortAnswer"
+prompt.prompt = "Trois nœuds essaient de se mettre d'accord. Le nœud 3 tombe en panne. Que doivent faire les deux nœuds restants pour pouvoir continuer à prendre des décisions ?"
+answer.answer = "avoir une majorité (au moins 2 sur 3)"
+answer.alternatives = ["former une majorité", "atteindre la majorité", "obtenir la majorité", "se mettre d'accord entre eux", "ils peuvent décider à deux car c'est la majorité"]
+context = "Dans Raft et la plupart des algorithmes de consensus, une décision est valide dès que la majorité des nœuds est d'accord. Avec 3 nœuds, 2 suffisent — le nœud en panne pourra se synchroniser à son retour."
+id = "a1b2c3d4-0006-4000-8000-000000000006"

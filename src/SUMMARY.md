@@ -25,10 +25,9 @@
 # Partie IV : Système de Consensus
 
 - [Qu'est-ce que le Consensus ?](./consensus/11-what-is-consensus.md)
-- [L'Algorithme Raft](./consensus/12-raft-algorithm.md)
-- [Élection de Leader Raft](./consensus/13-raft-leader-election.md)
-- [Réplication de Journal](./consensus/14-log-replication.md)
-- [Implémentation du Système de Consensus](./consensus/15-consensus-system.md)
+- [Élection de Leader Raft](./consensus/12-raft-leader-election.md)
+- [Réplication de Journal](./consensus/13-log-replication.md)
+- [Raft en Action](./consensus/14-consensus-system.md)
 
 # Documents de Référence
 

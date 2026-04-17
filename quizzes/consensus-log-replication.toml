@@ -1,15 +1,47 @@
 [[questions]]
 type = "MultipleChoice"
-prompt.prompt = "Que fait un leader lors de la réception d'une requête client ?"
-prompt.distractors = ["Exécuter immédiatement", "Ajouter au journal, répliquer, valider sur majorité", "Envoyer directement aux suiveurs"]
-answer.answer = "Ajouter au journal, répliquer, valider sur majorité"
-context = "Le pipeline complet : ajouter au journal du leader, répliquer aux suiveurs, attendre la reconnaissance de la majorité, valider, puis répondre au client."
-id = "2cd08454-0fcd-4ab3-b48f-6c5fcf51a873"
+prompt.prompt = "Que dit la propriété de correspondance du journal (log matching property) ?"
+prompt.distractors = ["Tous les nœuds ont exactement le même journal en permanence", "Chaque entrée du journal contient la signature numérique du chef", "Le journal ne peut contenir que des entrées du mandat courant"]
+answer.answer = "Si deux journaux ont une entrée avec le même index et le même mandat, toutes les entrées précédentes sont identiques"
+context = "La propriété de correspondance est la Règle d'Or de Raft. Si deux cahiers sont d'accord sur la page 5, ils sont forcément d'accord sur les pages 1 à 4. Chaque entrée confirme la précédente en cascade."
+id = "c3d4e5f6-0001-4000-8000-000000000001"
+
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "Que contient le message AppendEntries envoyé par le chef pour garantir la propriété de correspondance ?"
+prompt.distractors = ["La totalité du journal du chef depuis le début", "Seulement la nouvelle commande, sans information sur les entrées précédentes", "Un accusé de réception du client"]
+answer.answer = "La nouvelle entrée plus l'index et le mandat de l'entrée précédente"
+context = "Le chef envoie toujours l'index et le mandat de l'entrée précédente avec chaque nouvelle entrée. Si le suiveur ne trouve pas cette entrée précédente à la bonne place, il refuse d'ajouter la nouvelle — c'est le mécanisme de vérification en cascade."
+id = "c3d4e5f6-0002-4000-8000-000000000002"
+
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "Quand une entrée du journal est-elle considérée comme validée (committed) ?"
+prompt.distractors = ["Quand le chef l'a ajoutée à son journal", "Quand tous les suiveurs l'ont reçue et confirmée", "Quand le client a reçu la réponse du chef"]
+answer.answer = "Quand la majorité des nœuds l'ont stockée dans leur journal"
+context = "Une entrée est validée dès que la majorité des nœuds l'ont dans leur journal. Dans un cluster de 5, il suffit que 3 nœuds l'aient stockée. À partir de ce moment, elle ne sera jamais perdue — même si la moitié du cluster tombe en panne."
+id = "c3d4e5f6-0003-4000-8000-000000000003"
+
+[[questions]]
+type = "MultipleChoice"
+prompt.prompt = "Que fait le chef quand un suiveur a des entrées différentes des siennes ?"
+prompt.distractors = ["Il ignore le suiveur et continue sans lui", "Il redémarre le suiveur depuis zéro en vidant son journal", "Il demande au client de renvoyer toutes les commandes"]
+answer.answer = "Il recule étape par étape jusqu'à trouver la dernière correspondance, puis écrase les entrées incorrectes"
+context = "Le chef envoie AppendEntries, le suiveur vérifie l'entrée précédente. Si ça ne correspond pas, il répond NON et le chef recule d'un cran. Ce processus automatique continue jusqu'à trouver le point de divergence, puis le chef envoie les entrées correctes."
+id = "c3d4e5f6-0004-4000-8000-000000000004"
 
 [[questions]]
 type = "ShortAnswer"
-prompt.prompt = "Quel est l'index de validation dans Raft ?"
-answer.answer = "entrée validée la plus élevée"
-answer.alternatives = ["commit index", "index de validation", "index de commit"]
-context = "L'index de validation est l'entrée de journal la plus élevée connue pour être validée (sur la majorité). Le leader l'avance lorsque l'entrée du terme en cours est sur la majorité."
-id = "ccc1049d-1987-4e08-bc36-e81213a715da"
+prompt.prompt = "Le chef a le journal [SET x=1, SET y=2] et le suiveur a [SET x=1]. Que doit envoyer le chef au suiveur pour le rattraper ?"
+answer.answer = "AppendEntries avec SET y=2 et l'index/mandat de l'entrée précédente (SET x=1)"
+answer.alternatives = ["AppendEntries pour SET y=2 avec la référence à l'entrée SET x=1", "la commande SET y=2 avec l'index et le mandat de SET x=1", "AppendEntries contenant SET y=2 et les infos de l'entrée à l'index 1", "SET y=2 via AppendEntries en vérifiant que le suiveur a bien SET x=1"]
+context = "Le chef envoie un message AppendEntries avec la nouvelle entrée (SET y=2) et les informations de l'entrée précédente (index et mandat de SET x=1). Le suiveur vérifie que son entrée à l'index 1 correspond, puis ajoute SET y=2 à la suite."
+id = "c3d4e5f6-0005-4000-8000-000000000005"
+
+[[questions]]
+type = "ShortAnswer"
+prompt.prompt = "Dans un cluster de 5 nœuds, le chef envoie AppendEntries à 4 suiveurs. Seulement 2 suiveurs répondent OK (plus le chef = 3 sur 5). L'entrée est-elle validée ? Pourquoi ?"
+answer.answer = "Oui, car 3 sur 5 est la majorité — l'entrée est validée dès que la majorité des nœuds l'a stockée"
+answer.alternatives = ["oui, 3 sur 5 c'est la majorité", "oui car la majorité (3/5) a l'entrée", "oui, majority atteinte avec 3 nœuds", "oui, le chef + 2 suiveurs = majorité de 3 sur 5"]
+context = "Raft avance à la vitesse de la majorité, pas du plus lent. Avec 5 nœuds, la majorité est 3. Le chef + 2 suiveurs qui ont répondu OK = 3 nœuds, donc l'entrée est validée. Les 2 suiveurs restants seront mis à jour plus tard."
+id = "c3d4e5f6-0006-4000-8000-000000000006"
