@@ -34,3 +34,5 @@
 - [Configuration Docker](./reference/docker-setup.md)
 - [Dépannage](./reference/troubleshooting.md)
 - [Pour Aller Plus Loin](./reference/further-reading.md)
+- [Examen Final](./reference/examen-final.md)
+- [Corrigé de l'Examen Final](./reference/examen-final-corrige.md)
